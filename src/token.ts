@@ -30,6 +30,6 @@ export default class Token {
     }
 
     public toString() : string {
-        return `<${Object.keys(TokenTypes)[this.type]}:${this.value}>`
+        return `<${Object.keys(TokenTypes)[this.type].slice(0,2)}:${this.value}>`
     }
 };

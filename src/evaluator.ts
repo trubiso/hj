@@ -1,14 +1,19 @@
-import { INode, ITopNode, IVardecNode, ISymbolNode, NodeType, IExpressionNode, IValueNode, IOperatorNode } from "./parser";
+import chalk from "chalk";
+import { INode, ITopNode, IVardecNode, ISymbolNode, NodeType, IExpressionNode, IValueNode, IOperatorNode, IFunctionCallNode } from "./parser";
 import { BuiltIn } from "./token";
 
-interface IVar {
+export interface IVar {
     name: string,
     val: any,
     type: BuiltIn
 }
 
-interface IDummy<T> {
+export interface IDummy<T> { // this interface sucks but i'll leave it here (just in case i have to do something that sucks again)
     d: T
+};
+
+export const standardFunctions: any = {
+    print: console.log
 };
 
 export default class Evaluator {
@@ -20,15 +25,29 @@ export default class Evaluator {
         this.variables = [];
     }
 
+    private parseSymbol(s: ISymbolNode) : IVar {
+        const r = this.variables.find(y => y.name === s.name);
+        if (!r) {
+            throw `The symbol ${s.name} does not exist.`;
+        }
+        return r;
+    }
+
+    private nodesToLiterals(n : INode[]) : any[] {
+        return n.map(v => {
+            if (v.type === NodeType.UnparsedSymbol || v.type === NodeType.Symbol) return this.parseSymbol(v as ISymbolNode).val;
+            if (v.type === NodeType.StringLiteral || v.type === NodeType.NumberLiteral) return (v as IValueNode).value;
+            if (v.type === NodeType.Expression) return this.parseExpression(v as IExpressionNode);
+            if (v.type === NodeType.UnparsedOperator) return (v as IOperatorNode).operator;
+            return null;
+        }).filter(v => v);
+    }
+
     private parseExpression(n : IExpressionNode) : any {
         // Parse symbols into IVars
         const expr : (INode | IVar)[] = n.expr.map(v => {
             if (v.type === NodeType.UnparsedSymbol) {
-                const r = this.variables.find(y => y.name === (v as ISymbolNode).name);
-                if (!r) {
-                    throw `The symbol ${(v as ISymbolNode).name} does not exist.`;
-                }
-                return r;
+                return this.parseSymbol(v as ISymbolNode);
             } else {
                 return v;
             }
@@ -39,58 +58,70 @@ export default class Evaluator {
         expr.forEach(v => {
             if (v.type !== NodeType.UnparsedOperator) {
                 if (typeof v.type === "string") {
-                    exprStr += (v as IVar).val;
+                    exprStr += `(${(v as IVar).val})`;
                 } else {
-                    exprStr += (v as IValueNode).value;
+                    exprStr += `(${(v as IValueNode).value})`;
                 }
             } else {
                 exprStr += (v as IOperatorNode).operator;
             }
         });
 
-        console.log(exprStr);
-        return(eval(exprStr));
+        return eval(exprStr);
+    }
+
+    private evaluateVariableDeclaration(n: IVardecNode) {
+        this.variables.filter(v => v.name !== n.varname);
+        if (['string', 'number', 'boolean'].includes(typeof n.varval)) {
+            this.variables.push({
+                name: n.varname,
+                type: n.vartype,
+                val : n.varval
+            } as IVar);
+        } else {
+            if (n.varval.type === NodeType.Expression) {
+                this.variables.push({
+                    name: n.varname,
+                    type: n.vartype,
+                    val : this.parseExpression(n.varval)
+                } as IVar);
+            } else { // there is only one thing it can be now, a Symbol.
+                const vv = n.varval as ISymbolNode;
+                const variable = this.parseSymbol(vv);
+                if (variable.type !== n.vartype) {
+                    throw `Cannot set ${n.varname} to ${variable.val} - they are of different types (TODO: casting).`;
+                }
+                this.variables.push({
+                    name: n.varname,
+                    type: n.vartype,
+                    val : variable.val
+                });
+            }
+        }
+    }
+
+    private evaluateFunctionCall(n: IFunctionCallNode) {
+        if (standardFunctions[n.name]) {
+            standardFunctions[n.name](...this.nodesToLiterals(n.args));
+        } else {
+            throw `Function ${n.name} does not exist.`;
+        }
     }
 
     private run(node: INode) {
         switch(node.type) {
         case NodeType.VariableDeclaration:
-            const n = (node as IVardecNode);
-            this.variables.filter(v => v.name !== n.varname);
-            if (['string', 'number', 'boolean'].includes(typeof n.varval)) {
-                this.variables.push({
-                    name: n.varname,
-                    type: n.vartype,
-                    val : n.varval
-                } as IVar);
-            } else {
-                if (n.varval.type === NodeType.Expression) {
-                    this.variables.push({
-                        name: n.varname,
-                        type: n.vartype,
-                        val : this.parseExpression(n.varval)
-                    } as IVar);
-                } else { // there is only one thing it can be now, a Symbol.
-                    const vv = n.varval as ISymbolNode;
-                    const variable = this.variables.find(v => v.name === vv.name);
-                    if (!variable) {
-                        throw `The symbol ${vv.name} does not exist.`;
-                    }
-                    if (variable.type !== n.vartype) {
-                        throw `Cannot set ${n.varname} to ${variable.val} - they are of different types (TODO: casting).`;
-                    }
-                    this.variables.push({
-                        name: n.varname,
-                        type: n.vartype,
-                        val : variable.val
-                    });
-                }
-            }
+            this.evaluateVariableDeclaration(node as IVardecNode);
+            break;
+        case NodeType.FunctionCall:
+            this.evaluateFunctionCall(node as IFunctionCallNode);
+            break;
         }
     }
 
     public evaluate() {
+        const st = Date.now();
         this.ast.body.forEach(v => this.run(v));
-        console.log(this.variables);
+        console.log(chalk.grey(`Evaluated program in ${Date.now() - st} ms`));
     }
 }

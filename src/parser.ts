@@ -2,7 +2,7 @@ import Token, { BuiltIn, getTokenTypeName, Operator, TokenType } from "./token";
 import chalk from "chalk";
 
 export enum NodeType {
-    Program, NumberLiteral, StringLiteral, Symbol, VariableDeclaration, Expression, UnparsedOperator, UnparsedSymbol
+    Program, NumberLiteral, StringLiteral, Symbol, VariableDeclaration, Expression, FunctionCall, UnparsedOperator, UnparsedSymbol
 }
 
 export interface INode {
@@ -33,6 +33,11 @@ export interface IOperatorNode extends INode {
 
 export interface IExpressionNode extends INode {
     expr: INode[]
+}
+
+export interface IFunctionCallNode extends INode {
+    name: string;
+    args: INode[];
 }
 
 export default class Parser {
@@ -127,6 +132,18 @@ export default class Parser {
         }
         if (token.type === TokenType.SYMBOL) { // THIS HAS TO BE ONE OF THE LAST CHECKS, PLEASE TRUBISO REMEMBER
             this.current++;
+            if (this.tokens[this.current].type === TokenType.SPECIAL) { // x{} or x()
+                if (this.tokens[this.current].value === '(') { // function call
+                    let funcall = {
+                        type: NodeType.FunctionCall,
+                        name: token.value
+                    } as IFunctionCallNode;
+                    this.current++;
+                    funcall.args = [this.walk()]; // TODO: support multiple argument functions / expression input into functions
+                    this.current++; // skip closing parenthesis
+                    return funcall;
+                }
+            }
             return {
                 type: NodeType.UnparsedSymbol,
                 name: token.value
@@ -136,34 +153,25 @@ export default class Parser {
     }
 
     public parse() : ITopNode {
+        const st = Date.now();
         this.current = 0;
-        const log = true;
         let ast = {
             type: NodeType.Program,
             body: []
         } as ITopNode;
 
+        process.stdout.write(chalk.yellow("Parsing tokens..."));
+
         while (this.current < this.tokens.length) {
-            const prevCurr = this.current;
-            if (log) process.stdout.write(chalk.yellow(`Parsing token ${this.current}...`));
             if (this.tokens[this.current].type === TokenType.SPECIAL && this.tokens[this.current].value === ';') {
-                if (log) {
-                    process.stdout.write("\r\x1b[K");
-                    console.log(chalk.grey(`Token ${this.current} is semicolon, ignored.`));
-                }
                 this.current++;
                 continue;
             }
             ast.body.push(this.walk());
-            if (log) {
-                process.stdout.write("\r\x1b[K");
-                if (prevCurr === this.current-1) {
-                    console.log(chalk.green(`Parsed token ${this.current-1} successfully.`));
-                } else {
-                    console.log(chalk.green(`Parsed tokens ${prevCurr}-${this.current-1} successfully.`));
-                }
-            }
         }
+
+        process.stdout.write("\r\x1b[K");
+        console.log(chalk.green("Parsed tokens successfully. ") + chalk.grey(`(${Date.now() - st} ms)`));
 
         return ast;
     }

@@ -1,3 +1,4 @@
+import chalk from "chalk";
 import Pos from "./pos";
 import Token, { TokenTypes } from "./token";
 
@@ -19,7 +20,11 @@ export default class Tokenizer {
     }
 
     public createTokens() {
+        const st = Date.now();
+        process.stdout.write(chalk.yellow("Tokenizing code..."));
+
         const tokens : Token[] = [];
+
         while (this.slice) {
             var token = null;
             
@@ -38,7 +43,10 @@ export default class Tokenizer {
             tokens.push(token);
             this.advance(token.value.length);
         }
-        
+
+        process.stdout.write("\r\x1b[K");
+        console.log(chalk.green(`Successfully tokenized code. `) + chalk.grey(`(${Date.now() - st} ms)`));
+
         return tokens;
     }
 }
