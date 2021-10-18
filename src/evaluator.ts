@@ -8,7 +8,7 @@ export interface IVar {
     type: BuiltIn
 }
 
-export interface IDummy<T> { // this interface sucks but i'll leave it here (just in case i have to do something that sucks again)
+export interface IDummy<T> { // this interface sucks
     d: T
 };
 

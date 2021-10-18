@@ -49,6 +49,99 @@ export default class Parser {
         this.current = 0;
     }
 
+    /**
+     * Gives an array of the tokens until a closing parenthesis.
+     * The starting index (defaults to `this.current`) should store the index of the starting parenthesis for the search.
+     * 
+     * @argument skipPast Optional argument that defines whether `this.current` gets set to the index of the closing parenthesis. Defaults to `false`.
+     * @argument tkSlice Optional argument to provide a slice of tokens where the search will be done. If it is not provided, it defaults to `this.tokens`
+     * @argument stidx Optional argument to override the starting index.
+     */
+    private tokensUntilParen(skipPast = false, tkSlice?: Token[], stidx?: number) : Token[] { // as a side effect makes this.current higher
+        let l = 0; /* parenthesis level - useful for nested parentheses */
+        let i = (stidx ?? this.current) + 1; /* skip starting parenthesis */
+        const tk = tkSlice ?? this.tokens; /* slices will help later a lot */
+        for (; i < tk.length ; i ++) {
+            if (tk[i].value === '(') l ++;
+            if (tk[i].value === ')') l --;
+            if (l === -1) break; /* closing parenthesis for starting parenthesis */
+        }
+        if (skipPast) this.current = i;
+        return tk.slice(0, i); /* useful slice */
+    }
+
+    /**
+     * Gives a number of the index of the closing parenthesis.
+     * The starting index (defaults to `this.current`) should store the index of the starting parenthesis for the search.
+     * 
+     * @argument tkSlice Optional argument to provide a slice of tokens where the search will be done. If it is not provided, it defaults to `this.tokens`
+     * @argument stidx Optional argument to override the starting index.
+     */
+     private parenIdx(tkSlice?: Token[], stidx?: number) : number { // as a side effect makes this.current higher
+        let l = 0; /* parenthesis level - useful for nested parentheses */
+        let i = (stidx ?? this.current) + 1; /* skip starting parenthesis */
+        const tk = tkSlice ?? this.tokens; /* slices will help later a lot */
+        for (; i < tk.length ; i ++) {
+            if (tk[i].value === '(') l ++;
+            if (tk[i].value === ')') l --;
+            if (l === -1) break; /* closing parenthesis for starting parenthesis */
+        }
+        return i;
+    }
+
+    private expressionToNArr(expr: Token[]) {
+        const oC = this.current;
+        const theMagic = (slice: Token[]) : any => { // i do not know what to name this function
+            const pC = this.current;
+            let rC = pC + 0;
+            const arr = [];
+            for(; rC < slice.length ; rC++) {
+                if (slice[rC].value === '(') {
+                    const t = this.tokensUntilParen(false, slice, rC);
+                    this.current = rC + 1;
+                    arr.push(theMagic(t));
+                    this.current = pC;
+                    rC = this.parenIdx(slice, rC) + pC - 1;
+                } else {
+                    this.current = rC;
+                    arr.push(this.walk());
+                    this.current = pC;
+                }
+                console.log(rC);
+            }
+            return arr;
+        }
+        this.current = oC;
+        return theMagic(expr);
+    }
+
+    private parseExpression() {
+        const tk = this.tokens;
+        let i = this.current;
+        if (tk[i].value === '(') {
+            const t = this.tokensUntilParen(false);
+            const a = this.expressionToNArr(t);
+            console.log("%j",a);
+
+        } else {
+            throw `unsupòrted`;
+        }
+        /*if (tk[i].value === '(') {
+            this.current += 4;
+            let exprnode = {
+                type: NodeType.Expression,
+                expr: []
+            } as IExpressionNode;
+            while(this.tokens[this.current].type !== TokenType.SPECIAL) {
+                exprnode.expr.push(this.walk());
+            }
+            vardec.varval = exprnode;
+            this.current -= 3; // rewind because later we're adding 4 and 4-3 is 1 which skips the closing parenthesis
+        } else {
+            throw `Unexpected ${valTok.value} in assignment (${token.value} ${nameTok.value} = ${valTok.value})`;
+        }*/
+    }
+
     private walk() : INode /* TODO: remove union with undefined */ {
         let token = this.tokens[this.current];
         if (token.type === TokenType.NUMBER) {
@@ -100,15 +193,17 @@ export default class Parser {
                     break;
                 case TokenType.SPECIAL:
                     if (valTok.value === '(') {
-                        this.current += 4;
-                        let exprnode = {
+                        this.current += 3;
+                        this.parseExpression();
+                        this.current++;
+                        /*let exprnode = {
                             type: NodeType.Expression,
                             expr: []
                         } as IExpressionNode;
                         while(this.tokens[this.current].type !== TokenType.SPECIAL) {
                             exprnode.expr.push(this.walk());
                         }
-                        vardec.varval = exprnode;
+                        vardec.varval = exprnode;*/
                         this.current -= 3; // rewind because later we're adding 4 and 4-3 is 1 which skips the closing parenthesis
                     } else {
                         throw `Unexpected ${valTok.value} in assignment (${token.value} ${nameTok.value} = ${valTok.value})`;
