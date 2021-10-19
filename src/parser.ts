@@ -123,7 +123,6 @@ export default class Parser {
         if (tk[i].value === '(') {
             const t = this.tokensUntilParen(false);
             const a = this.expressionToNode(t);
-            console.log(a);
             this.current = this.parenIdx(this.tokens);
             return a;
         } else {

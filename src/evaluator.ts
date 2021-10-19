@@ -77,7 +77,6 @@ export default class Evaluator {
         }
         expr.forEach(r);
 
-        console.log(exprStr);
         return eval(exprStr);
     }
 
