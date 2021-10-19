@@ -89,30 +89,32 @@ export default class Parser {
         return i;
     }
 
-    private expressionToNArr(expr: Token[]) {
+    private expressionToNode(expr: Token[]) : IExpressionNode {
         const oC = this.current;
-        const theMagic = (slice: Token[]) : any => { // i do not know what to name this function
+        const theMagic = (slice: Token[]) : IExpressionNode => { // i do not know what to name this function
             const pC = this.current;
             let rC = pC + 0;
-            const arr = [];
+            const arr: INode[] = [];
             for(; rC < slice.length ; rC++) {
                 if (slice[rC].value === '(') {
                     const t = this.tokensUntilParen(false, slice, rC);
                     this.current = rC + 1;
                     arr.push(theMagic(t));
                     this.current = pC;
-                    rC = this.parenIdx(slice, rC) + pC - 1;
+                    rC = this.parenIdx(slice, rC); // reminder for future self: this (this.parenIdx) does NOT (under ANY circumstances) need to be added to pC (starting index). i've been debugging this for a hour or something and that was the cause AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
                 } else {
                     this.current = rC;
                     arr.push(this.walk());
                     this.current = pC;
                 }
-                console.log(rC);
             }
-            return arr;
+            return {
+                type: NodeType.Expression,
+                expr: arr
+            } as IExpressionNode;
         }
         this.current = oC;
-        return theMagic(expr);
+        return theMagic(expr).expr[0] as IExpressionNode;
     }
 
     private parseExpression() {
@@ -120,11 +122,12 @@ export default class Parser {
         let i = this.current;
         if (tk[i].value === '(') {
             const t = this.tokensUntilParen(false);
-            const a = this.expressionToNArr(t);
-            console.log("%j",a);
-
+            const a = this.expressionToNode(t);
+            console.log(a);
+            this.current = this.parenIdx(this.tokens);
+            return a;
         } else {
-            throw `unsupòrted`;
+            throw `use expressions with parentheses pls`;
         }
         /*if (tk[i].value === '(') {
             this.current += 4;
@@ -140,6 +143,7 @@ export default class Parser {
         } else {
             throw `Unexpected ${valTok.value} in assignment (${token.value} ${nameTok.value} = ${valTok.value})`;
         }*/
+        // the above code is garbage but i keep it just in case something breaks and i have to read it again (ew)
     }
 
     private walk() : INode /* TODO: remove union with undefined */ {
@@ -194,16 +198,8 @@ export default class Parser {
                 case TokenType.SPECIAL:
                     if (valTok.value === '(') {
                         this.current += 3;
-                        this.parseExpression();
-                        this.current++;
-                        /*let exprnode = {
-                            type: NodeType.Expression,
-                            expr: []
-                        } as IExpressionNode;
-                        while(this.tokens[this.current].type !== TokenType.SPECIAL) {
-                            exprnode.expr.push(this.walk());
-                        }
-                        vardec.varval = exprnode;*/
+                        vardec.varval = this.parseExpression();
+                        this.current ++; // i know this is too much maths for you
                         this.current -= 3; // rewind because later we're adding 4 and 4-3 is 1 which skips the closing parenthesis
                     } else {
                         throw `Unexpected ${valTok.value} in assignment (${token.value} ${nameTok.value} = ${valTok.value})`;

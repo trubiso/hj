@@ -45,17 +45,26 @@ export default class Evaluator {
 
     private parseExpression(n : IExpressionNode) : any {
         // Parse symbols into IVars
-        const expr : (INode | IVar)[] = n.expr.map(v => {
+        const p = (v: INode | IVar) : any => { // this name is VERY descriptive. what does this function do? it p
             if (v.type === NodeType.UnparsedSymbol) {
                 return this.parseSymbol(v as ISymbolNode);
+            } else if (v.type === NodeType.Expression) {
+                return (v as IExpressionNode).expr.map(p);
             } else {
                 return v;
             }
-        });
+        }
+        const expr : any[] /* actually can have either INodes, IVars or expressions turned into arrays. too tired to write a type annotation for that if it's even possible*/ = n.expr.map(p);
 
         // Convert into mathematical expression
         let exprStr = "";
-        expr.forEach(v => {
+        const r = (v: any) : void => { // yet another descriptive name
+            if (v.length) {
+                exprStr += "(";
+                v.forEach(r);
+                exprStr += ")";
+                return; // i like this code
+            }
             if (v.type !== NodeType.UnparsedOperator) {
                 if (typeof v.type === "string") {
                     exprStr += `(${(v as IVar).val})`;
@@ -65,8 +74,10 @@ export default class Evaluator {
             } else {
                 exprStr += (v as IOperatorNode).operator;
             }
-        });
+        }
+        expr.forEach(r);
 
+        console.log(exprStr);
         return eval(exprStr);
     }
 
