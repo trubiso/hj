@@ -6,8 +6,8 @@ export const TokenTypes = {
     KEYWORD : /^[\s]*(?:return|function|class)/,
     SYMBOL  : /^[\s]*[A-Za-z_][\w]*/,
     OPERATOR: /^[\s]*(?:(?:[+\-\/*]?=)|(?:[+\-]{2})|(?:[+\-\/*\=]))/,
-    SPECIAL : /^[\s]*(?:[\{\}\(\);:]|=>)/,/*
-    OTHER*/
+    SPECIAL : /^[\s]*(?:[\{\}\(\);:]|=>)/,
+    OTHER   : /^[\s]*(?:\,)/
 };
 
 export type BuiltIn  = 'int' | 'void' | 'string' | 'char' | 'frac' | 'float' | 'double' | 'bool';
@@ -17,7 +17,7 @@ export type Operator = '+' | '-' | '*' | '/' | '+=' | '-=' | '*=' | '/=' | '++' 
 export function getTokenTypeName(i: number) { return Object.values(TokenType)[i]; }
 
 export enum TokenType {
-    NUMBER, STRING, BOOLEAN, BUILTIN, KEYWORD, SYMBOL, OPERATOR, SPECIAL
+    NUMBER, STRING, BOOLEAN, BUILTIN, KEYWORD, SYMBOL, OPERATOR, SPECIAL, OTHER
 }
 
 export default class Token {

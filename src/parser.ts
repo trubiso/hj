@@ -2,7 +2,7 @@ import Token, { BuiltIn, getTokenTypeName, Operator, TokenType } from "./token";
 import chalk from "chalk";
 
 export enum NodeType {
-    Program, NumberLiteral, StringLiteral, Symbol, VariableDeclaration, Expression, FunctionCall, UnparsedOperator, UnparsedSymbol
+    Program, NumberLiteral, StringLiteral, Symbol, VariableDeclaration, Expression, FunctionCall, UnparsedOperator, UnparsedSymbol, Comma
 }
 
 export interface INode {
@@ -39,6 +39,8 @@ export interface IFunctionCallNode extends INode {
     name: string;
     args: INode[];
 }
+
+export interface ICommaNode extends INode {};
 
 export default class Parser {
     public tokens: Token[];
@@ -189,9 +191,17 @@ export default class Parser {
 
     private walk() : INode /* TODO: remove union with undefined */ {
         let token = this.tokens[this.current];
+        if (!token) throw `token oob`;
         if (token.type === TokenType.SPECIAL) {
-            ++this.current;
-            return this.walk();
+            /*
+            if (this.tokens[this.current + 1])
+            if (!([TokenType.OTHER, TokenType.KEYWORD, TokenType.BUILTIN].includes(this.tokens[this.current + 1].type)) && token.value === '(') {
+                return this.parseExpression();
+            }
+            this code is garbage
+            */
+            if ([')', ';', '}'].includes(token.value)) { this.current++; return this.walk() };
+            throw `oh no! something went wrong`
         }
         if (token.type === TokenType.NUMBER) {
             this.current++;
@@ -279,10 +289,15 @@ export default class Parser {
                 if (this.tokens[this.current].value === '(') { // function call
                     let funcall = {
                         type: NodeType.FunctionCall,
-                        name: token.value
+                        name: token.value,
+                        args: []
                     } as IFunctionCallNode;
                     this.current++;
-                    funcall.args = [this.walk()]; // TODO: support multiple argument functions / expression input into functions
+                    while(true) {
+                        if (this.tokens[this.current].value === ')') break;
+                        const t = this.walk();
+                        if (t.type !== NodeType.Comma) funcall.args.push(t);
+                    }
                     this.current++; // skip closing parenthesis
                     return funcall;
                 }
@@ -291,6 +306,12 @@ export default class Parser {
                 type: NodeType.UnparsedSymbol,
                 name: token.value
             } as ISymbolNode;
+        }
+        if (token.type === TokenType.OTHER) { // THIS HAS TO BE ONE OF THE LAST CHECKS, PLEASE TRUBISO REMEMBER
+            this.current++;
+            return {
+                type: NodeType.Comma
+            } as ICommaNode;
         }
         throw `Cannot parse token of type ${getTokenTypeName(token.type)}`;
     }

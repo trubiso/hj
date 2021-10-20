@@ -35,11 +35,21 @@ export default class Evaluator {
 
     private nodesToLiterals(n : INode[]) : any[] {
         return n.map(v => {
-            if (v.type === NodeType.UnparsedSymbol || v.type === NodeType.Symbol) return this.parseSymbol(v as ISymbolNode).val;
-            if (v.type === NodeType.StringLiteral || v.type === NodeType.NumberLiteral) return (v as IValueNode).value;
-            if (v.type === NodeType.Expression) return this.parseExpression(v as IExpressionNode);
-            if (v.type === NodeType.UnparsedOperator) return (v as IOperatorNode).operator;
-            return null;
+            switch(v.type) {
+            case NodeType.UnparsedSymbol:
+            case NodeType.Symbol:
+                return this.parseSymbol(v as ISymbolNode).val;
+            case NodeType.StringLiteral:
+                return (v as IValueNode).value.slice(1, -1);
+            case NodeType.NumberLiteral:
+                return (v as IValueNode).value;
+            case NodeType.Expression:
+                return this.parseExpression(v as IExpressionNode);
+            case NodeType.UnparsedOperator:
+                return (v as IOperatorNode).operator;
+            default:
+                return null;
+            }
         }).filter(v => v);
     }
 
@@ -67,7 +77,7 @@ export default class Evaluator {
             }
             if (v.type !== NodeType.UnparsedOperator) {
                 if (typeof v.type === "string") {
-                    exprStr += `(${(v as IVar).val})`;
+                    exprStr += `(${v.type === "string" ? (v as IVar).val.slice(1, -1) : (v as IVar).val})`;
                 } else {
                     exprStr += `(${(v as IValueNode).value})`;
                 }
@@ -86,7 +96,7 @@ export default class Evaluator {
             this.variables.push({
                 name: n.varname,
                 type: n.vartype,
-                val : n.varval
+                val : typeof n.varval === 'string' ? n.varval.slice(1, -1) : n.varval
             } as IVar);
         } else {
             if (n.varval.type === NodeType.Expression) {
