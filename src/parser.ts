@@ -144,6 +144,7 @@ export default class Parser {
                 } else {
                     this.current = rC;
                     arr.push(this.walk());
+                    rC = this.current - 1;
                     this.current = pC;
                 }
             }
@@ -201,7 +202,7 @@ export default class Parser {
             this code is garbage
             */
             if ([')', ';', '}'].includes(token.value)) { this.current++; return this.walk() };
-            throw `oh no! something went wrong`
+            throw `oh no! something went wrong ${token.toString()}`
         }
         if (token.type === TokenType.NUMBER) {
             this.current++;

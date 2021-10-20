@@ -13,7 +13,9 @@ export interface IDummy<T> { // this interface sucks
 };
 
 export const standardFunctions: any = {
-    print: console.log
+    print: console.log,
+    toString: (v: any) => v.toString(),
+    sqrt: Math.sqrt
 };
 
 export default class Evaluator {
@@ -40,7 +42,6 @@ export default class Evaluator {
             case NodeType.Symbol:
                 return this.parseSymbol(v as ISymbolNode).val;
             case NodeType.StringLiteral:
-                return (v as IValueNode).value.slice(1, -1);
             case NodeType.NumberLiteral:
                 return (v as IValueNode).value;
             case NodeType.Expression:
@@ -60,6 +61,8 @@ export default class Evaluator {
                 return this.parseSymbol(v as ISymbolNode);
             } else if (v.type === NodeType.Expression) {
                 return (v as IExpressionNode).expr.map(p);
+            } else if (v.type === NodeType.FunctionCall) {
+                return {type: NodeType.Symbol, value: this.evaluateFunctionCall(v as IFunctionCallNode)} as IValueNode;
             } else {
                 return v;
             }
@@ -77,7 +80,7 @@ export default class Evaluator {
             }
             if (v.type !== NodeType.UnparsedOperator) {
                 if (typeof v.type === "string") {
-                    exprStr += `(${v.type === "string" ? (v as IVar).val.slice(1, -1) : (v as IVar).val})`;
+                    exprStr += `(${v.type === "string" ? `"${(v as IVar).val}"` : (v as IVar).val})`;
                 } else {
                     exprStr += `(${(v as IValueNode).value})`;
                 }
@@ -122,7 +125,7 @@ export default class Evaluator {
 
     private evaluateFunctionCall(n: IFunctionCallNode) {
         if (standardFunctions[n.name]) {
-            standardFunctions[n.name](...this.nodesToLiterals(n.args));
+            return standardFunctions[n.name](...this.nodesToLiterals(n.args));
         } else {
             throw `Function ${n.name} does not exist.`;
         }
