@@ -1,6 +1,6 @@
 export const TokenTypes = {
     NUMBER  : /^[\s]*(?:-)?[0-9]+(?:\.[0-9]+)?/,
-    STRING  : /^[\s]*\"(?:.*)\"/,
+    STRING  : /^[\s]*\"(?:.*?)\"/,
     BOOLEAN : /^[\s]*(?:true|false)/,
     BUILTIN : /^[\s]*(?:num|void|string|frac|bool)/,
     KEYWORD : /^[\s]*(?:return|function|class)/,
