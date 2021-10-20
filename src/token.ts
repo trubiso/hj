@@ -2,7 +2,7 @@ export const TokenTypes = {
     NUMBER  : /^[\s]*(?:-)?[0-9]+(?:\.[0-9]+)?/,
     STRING  : /^[\s]*\"(?:.*)\"/,
     BOOLEAN : /^[\s]*(?:true|false)/,
-    BUILTIN : /^[\s]*(?:int|void|string|char|frac|float|double|bool)/,
+    BUILTIN : /^[\s]*(?:num|void|string|frac|bool)/,
     KEYWORD : /^[\s]*(?:return|function|class)/,
     SYMBOL  : /^[\s]*[A-Za-z_][\w]*/,
     OPERATOR: /^[\s]*(?:(?:[+\-\/*]?=)|(?:[+\-]{2})|(?:[+\-\/*\=]))/,
@@ -10,7 +10,7 @@ export const TokenTypes = {
     OTHER   : /^[\s]*(?:\,)/
 };
 
-export type BuiltIn  = 'int' | 'void' | 'string' | 'char' | 'frac' | 'float' | 'double' | 'bool';
+export type BuiltIn  = 'num' | 'void' | 'string' | 'frac' | 'bool';
 export type Keyword  = 'return' | 'function' | 'class';
 export type Operator = '+' | '-' | '*' | '/' | '+=' | '-=' | '*=' | '/=' | '++' | '--';
 
