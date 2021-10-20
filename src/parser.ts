@@ -77,7 +77,7 @@ export default class Parser {
      * @argument tkSlice Optional argument to provide a slice of tokens where the search will be done. If it is not provided, it defaults to `this.tokens`
      * @argument stidx Optional argument to override the starting index.
      */
-     private parenIdx(tkSlice?: Token[], stidx?: number) : number { // as a side effect makes this.current higher
+    private parenIdx(tkSlice?: Token[], stidx?: number) : number { // as a side effect makes this.current higher
         let l = 0; /* parenthesis level - useful for nested parentheses */
         let i = (stidx ?? this.current) + 1; /* skip starting parenthesis */
         const tk = tkSlice ?? this.tokens; /* slices will help later a lot */
@@ -85,6 +85,43 @@ export default class Parser {
             if (tk[i].value === '(') l ++;
             if (tk[i].value === ')') l --;
             if (l === -1) break; /* closing parenthesis for starting parenthesis */
+        }
+        return i;
+    }
+
+    /**
+     * Gives an array of the tokens until the given delimiter.
+     * The starting index (defaults to `this.current`) should store the index of the starting token for the search.
+     * 
+     * @argument delim The delimiter to search for in the string.
+     * @argument skipPast Optional argument that defines whether `this.current` gets set to the index of the delimiter. Defaults to `false`.
+     * @argument tkSlice Optional argument to provide a slice of tokens where the search will be done. If it is not provided, it defaults to `this.tokens`
+     * @argument stidx Optional argument to override the starting index.
+     */
+    private tokensUntilDelim(delim: string, skipPast = false, tkSlice: Token[] = this.tokens, stidx: number = this.current) : Token[] {
+        let i = stidx;
+        const tk = tkSlice;
+        for (; i < tk.length ; i ++) {
+            if (tk[i].value === delim) break;
+        }
+        if (skipPast) this.current = i;
+        return tk.slice(stidx, i); /* useful slice */
+    }
+
+    /**
+     * Gives the index of the next ocurrence of the given delimiter.
+     * The starting index (defaults to `this.current`) should store the index of the starting token for the search.
+     * 
+     * @argument delim The delimiter to search for in the string.
+     * @argument skipPast Optional argument that defines whether `this.current` gets set to the index of the delimiter. Defaults to `false`.
+     * @argument tkSlice Optional argument to provide a slice of tokens where the search will be done. If it is not provided, it defaults to `this.tokens`
+     * @argument stidx Optional argument to override the starting index.
+     */
+     private delimIdx(delim: string, tkSlice?: Token[], stidx?: number) : number {
+        let i = (stidx ?? this.current);
+        const tk = tkSlice ?? this.tokens;
+        for (; i < tk.length ; i ++) {
+            if (tk[i].value === delim) break;
         }
         return i;
     }
@@ -117,16 +154,21 @@ export default class Parser {
         return theMagic(expr).expr[0] as IExpressionNode;
     }
 
-    private parseExpression() {
+    private parseExpression(): IExpressionNode {
         const tk = this.tokens;
         let i = this.current;
         if (tk[i].value === '(') {
-            const t = this.tokensUntilParen(false);
+            const t = this.tokensUntilParen();
             const a = this.expressionToNode(t);
-            this.current = this.parenIdx(this.tokens);
+            this.current = this.parenIdx();
             return a;
         } else {
-            throw `use expressions with parentheses pls`;
+            // life hack (DO NOT TRY) (this code is garbage)
+            this.tokens = [...this.tokens.slice(0, this.current), new Token(TokenType.SPECIAL, '('), // this IS going to break
+            ...this.tokens.slice(this.current, this.delimIdx(';')), new Token(TokenType.SPECIAL, ')'),
+            ...this.tokens.slice(this.delimIdx(';'))];
+
+            return this.parseExpression(); // i hope this doesnt make it recursive (spoiler: it did at some point but i fix)
         }
         /*if (tk[i].value === '(') {
             this.current += 4;
@@ -147,6 +189,10 @@ export default class Parser {
 
     private walk() : INode /* TODO: remove union with undefined */ {
         let token = this.tokens[this.current];
+        if (token.type === TokenType.SPECIAL) {
+            ++this.current;
+            return this.walk();
+        }
         if (token.type === TokenType.NUMBER) {
             this.current++;
             return {
@@ -179,6 +225,13 @@ export default class Parser {
                     throw `Tried to parse assignment "${token.value} ${nameTok.value} = ${valTok.value}" but ${valTok.value} is of type ${getTokenTypeName(valTok.type)} (unsupported).`
                 // @ts-ignore
                 case TokenType.NUMBER:
+                    if (this.tokens[this.current + 4].value === '(' || this.tokens[this.current + 4].type === TokenType.OPERATOR) {
+                        this.current += 3;
+                        vardec.varval = this.parseExpression();
+                        this.current ++;
+                        this.current -= 5; // just get to the semicolon
+                        break;
+                    }
                     if (valTok.value.includes(".")) valTokVal = parseFloat(valTok.value);
                     else valTokVal = parseInt(valTok.value);
                 case TokenType.STRING:
