@@ -16,7 +16,7 @@ export default class Tokenizer {
     public advance(n: number) {
         this.pos.advance(n);
         this.slice = this.code.slice(this.pos.idx);
-        while ([' ', '\t', ' '].includes(this.slice[0])) this.advance(1);
+        while ([' ', '\t', ' ', '\n'].includes(this.slice[0])) this.advance(1);
     }
 
     public createTokens() {

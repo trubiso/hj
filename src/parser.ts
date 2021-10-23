@@ -202,7 +202,8 @@ export default class Parser {
             this code is garbage
             */
             if ([')', ';', '}'].includes(token.value)) { this.current++; return this.walk() };
-            throw `oh no! something went wrong ${token.toString()}`
+            console.log(`\n${chalk.redBright("oh no! something went wrong:")} ${chalk.grey(this.tokens[--this.current])} ${chalk.whiteBright(this.tokens[++this.current])} ${chalk.grey(this.tokens[++this.current])} (token #${--this.current})`);
+            throw "";
         }
         if (token.type === TokenType.NUMBER) {
             this.current++;

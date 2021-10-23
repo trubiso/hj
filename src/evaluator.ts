@@ -32,7 +32,8 @@ export default class Evaluator {
     private parseSymbol(s: ISymbolNode) : IVar {
         const r = this.variables.find(y => y.name === s.name);
         if (!r) {
-            throw `The symbol ${s.name} does not exist.`;
+            console.log(chalk.redBright(`symbol ${s.name} not found `) + chalk.grey(`(current symbols: ${this.variables.map(v => v.name).join(', ')})`));
+            throw "";
         }
         return r;
     }
@@ -97,9 +98,26 @@ export default class Evaluator {
         return eval(exprStr);
     }
 
+    private typeCheck(type: BuiltIn, spsType: string) {
+        switch(type) {
+        case 'bool':
+            if (spsType === 'boolean')  return true; break;
+        case 'string':
+            if (spsType === 'string')   return true; break;
+        case 'num':
+            if (spsType === 'number')   return true; break;
+        case 'frac':
+            throw "Frac not yet implemented" // TODO: Implement
+        case 'void':
+            return false; // no var will ever need to be a void
+        }
+        return false;
+    }
+
     private evaluateVariableDeclaration(n: IVardecNode) {
         this.variables.filter(v => v.name !== n.varname);
         if (['string', 'number', 'boolean'].includes(typeof n.varval)) {
+            if (!this.typeCheck(n.vartype, typeof n.varval)) throw `Expected value of ${n.varname} (${n.varval}) to be a ${n.vartype}; got ${typeof n.varval} instead.`;
             this.variables.push({
                 name: n.varname,
                 type: n.vartype,
@@ -116,7 +134,7 @@ export default class Evaluator {
                 const vv = n.varval as ISymbolNode;
                 const variable = this.parseSymbol(vv);
                 if (variable.type !== n.vartype) {
-                    throw `Cannot set ${n.varname} to ${variable.val} - they are of different types (TODO: casting).`;
+                    throw `Cannot set ${n.varname} to ${variable.val} - they are of different types.`;
                 }
                 this.variables.push({
                     name: n.varname,
