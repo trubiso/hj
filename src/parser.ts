@@ -190,18 +190,17 @@ export default class Parser {
         // the above code is garbage but i keep it just in case something breaks and i have to read it again (ew)
     }
 
-    private walk() : INode /* TODO: remove union with undefined */ {
+    // but where is that chat? go to live share at the left and at the bottom of the top part you will find "Session chat"
+
+    private walk() : INode {
         let token = this.tokens[this.current];
         if (!token) throw `token oob`;
         if (token.type === TokenType.SPECIAL) {
-            /*
-            if (this.tokens[this.current + 1])
-            if (!([TokenType.OTHER, TokenType.KEYWORD, TokenType.BUILTIN].includes(this.tokens[this.current + 1].type)) && token.value === '(') {
+            /*if (this.tokens[this.current + 1])
+            if (token.value === '(' && !([TokenType.OTHER, TokenType.KEYWORD, TokenType.BUILTIN].includes(this.tokens[this.current + 1].type))) {
                 return this.parseExpression();
-            }
-            this code is garbage
-            */
-            if ([')', ';', '}'].includes(token.value)) { this.current++; return this.walk() };
+            }*/
+            if ([')', ';', '}'].includes(token.value)) { this.current++; return this.walk(); };
             console.log(`\n${chalk.redBright("oh no! something went wrong:")} ${chalk.grey(this.tokens[--this.current])} ${chalk.whiteBright(this.tokens[++this.current])} ${chalk.grey(this.tokens[++this.current])} (token #${--this.current})`);
             throw "";
         }
@@ -237,6 +236,10 @@ export default class Parser {
                     throw `Tried to parse assignment "${token.value} ${nameTok.value} = ${valTok.value}" but ${valTok.value} is of type ${getTokenTypeName(valTok.type)} (unsupported).`
                 // @ts-ignore
                 case TokenType.NUMBER:
+                    if (valTok.value.includes(".")) valTokVal = parseFloat(valTok.value);
+                    else valTokVal = parseInt(valTok.value);
+                case TokenType.STRING:
+                    vardec.varval = valTokVal;
                     if (this.tokens[this.current + 4].value === '(' || this.tokens[this.current + 4].type === TokenType.OPERATOR) {
                         this.current += 3;
                         vardec.varval = this.parseExpression();
@@ -244,10 +247,6 @@ export default class Parser {
                         this.current -= 5; // just get to the semicolon
                         break;
                     }
-                    if (valTok.value.includes(".")) valTokVal = parseFloat(valTok.value);
-                    else valTokVal = parseInt(valTok.value);
-                case TokenType.STRING:
-                    vardec.varval = valTokVal;
                     break;
                 case TokenType.BOOLEAN:
                     if (valTok.value === 'true') vardec.varval = true;
@@ -273,10 +272,12 @@ export default class Parser {
                 this.current += 4;
                 return vardec;
             }
-            return {
+            //console.log(this.tokens.map(v => v.toString()).join(''));
+            //console.log(getTokenTypeName(token.type), getTokenTypeName(nameTok.type), getTokenTypeName(asgnTok.type), asgnTok.value);
+            /*return {
                 type: NodeType.StringLiteral,
                 value: token.value
-            } as IValueNode; //TODO: this shouldn't exist, i'm just trying to make the throw hapy
+            } as IValueNode; //TODO: this shouldn't exist, i'm just trying to make the throw hapy*/
         }
         if (token.type === TokenType.OPERATOR) { // THIS HAS TO BE ONE OF THE LAST CHECKS, PLEASE TRUBISO REMEMBER
             this.current++;
@@ -315,7 +316,8 @@ export default class Parser {
                 type: NodeType.Comma
             } as ICommaNode;
         }
-        throw `Cannot parse token of type ${getTokenTypeName(token.type)}`;
+        console.log(`\n${chalk.redBright(`Cannot parse token of type ${getTokenTypeName(token.type)}`)} ${chalk.grey(this.tokens[--this.current])} ${chalk.whiteBright(this.tokens[++this.current])} ${chalk.grey(this.tokens[++this.current])} (token #${--this.current})`);
+        throw "";
     }
 
     public parse() : ITopNode {
@@ -333,6 +335,7 @@ export default class Parser {
                 this.current++;
                 continue;
             }
+            const n = this.walk();
             ast.body.push(this.walk());
         }
 

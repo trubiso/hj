@@ -35,6 +35,7 @@ export default class Evaluator {
             console.log(chalk.redBright(`symbol ${s.name} not found `) + chalk.grey(`(current symbols: ${this.variables.map(v => v.name).join(', ')})`));
             throw "";
         }
+        if (r.type === 'string') r.val = r.val.slice(1, -1);
         return r;
     }
 
@@ -94,8 +95,9 @@ export default class Evaluator {
             }
         }
         expr.forEach(r);
-
-        return eval(exprStr);
+        const o = eval(exprStr);
+        if (typeof o === 'string') return `"${o}"`;
+        return o;
     }
 
     private typeCheck(type: BuiltIn, spsType: string) {

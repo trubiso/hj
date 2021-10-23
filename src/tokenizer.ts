@@ -8,9 +8,17 @@ export default class Tokenizer {
     public slice: string;
 
     constructor(code: string) {
-        this.code = code;
+        this.code = code.split('\n').map(v => {
+            let isOnAString = false;
+            let ind = v.length;
+            v.split('').forEach((c, i) => {
+                if (c === "\"") isOnAString = !isOnAString;
+                if (!isOnAString && v[i - 1] && v[i - 1] === '/' && c === '/') ind = i - 1;
+            });
+            return v.slice(0, ind);
+        }).join(' ');
         this.pos = new Pos(0, 0, 0, code);
-        this.slice = code;
+        this.slice = this.code + ""; // make sure it's not a reference, even though i don't know if it could be
     }
 
     public advance(n: number) {

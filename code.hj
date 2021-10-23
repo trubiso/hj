@@ -1,6 +1,6 @@
 print("whats your name");
 string name = "hello, " + input("(tell me) ") + ". i'm dad :)";
-print(name);
+print(name); // bool hello = false;
 bool helo = false;
 num x = 5;
 num y = 10;
@@ -8,5 +8,5 @@ num z = 3 + x - y;
 num r = x;
 num a = 1045;
 num f = x + y + z + r + a;
-string sf = "the magic number is " + toString(f);
-print(sf);
+string sf = "e" + "b";
+print((sf + "a"));

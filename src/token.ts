@@ -3,7 +3,8 @@ export const TokenTypes = {
     STRING  : /^[\s]*\"(?:.*?)\"/,
     BOOLEAN : /^[\s]*(?:true|false)/,
     BUILTIN : /^[\s]*(?:num|void|string|frac|bool)/,
-    KEYWORD : /^[\s]*(?:return|function|class)/,
+    USRTYPES: /^[\s]*(?:class|function)/,
+    KEYWORD : /^[\s]*(if|while|for|return)/,
     SYMBOL  : /^[\s]*[A-Za-z_][\w]*/,
     OPERATOR: /^[\s]*(?:(?:[+\-\/*]?=)|(?:[+\-]{2})|(?:[+\-\/*\=]))/,
     SPECIAL : /^[\s]*(?:[\{\}\(\);:]|=>)/,
@@ -11,13 +12,14 @@ export const TokenTypes = {
 };
 
 export type BuiltIn  = 'num' | 'void' | 'string' | 'frac' | 'bool';
-export type Keyword  = 'return' | 'function' | 'class';
+export type UsrTypes  = 'class' | 'function';
+export type Keyword  = 'if' | 'while' | 'for' | 'return';
 export type Operator = '+' | '-' | '*' | '/' | '+=' | '-=' | '*=' | '/=' | '++' | '--';
 
 export function getTokenTypeName(i: number) { return Object.values(TokenType)[i]; }
 
 export enum TokenType {
-    NUMBER, STRING, BOOLEAN, BUILTIN, KEYWORD, SYMBOL, OPERATOR, SPECIAL, OTHER
+    NUMBER, STRING, BOOLEAN, BUILTIN, USRTYPES, KEYWORD, SYMBOL, OPERATOR, SPECIAL, OTHER
 }
 
 export default class Token {
