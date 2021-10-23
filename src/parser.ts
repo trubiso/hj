@@ -64,8 +64,8 @@ export default class Parser {
         let i = (stidx ?? this.current) + 1; /* skip starting parenthesis */
         const tk = tkSlice ?? this.tokens; /* slices will help later a lot */
         for (; i < tk.length ; i ++) {
-            if (tk[i].value === '(') l ++;
-            if (tk[i].value === ')') l --;
+            if (tk[i].type === TokenType.SPECIAL && tk[i].value === '(') l ++;
+            if (tk[i].type === TokenType.SPECIAL && tk[i].value === ')') l --;
             if (l === -1) break; /* closing parenthesis for starting parenthesis */
         }
         if (skipPast) this.current = i;
@@ -84,8 +84,8 @@ export default class Parser {
         let i = (stidx ?? this.current) + 1; /* skip starting parenthesis */
         const tk = tkSlice ?? this.tokens; /* slices will help later a lot */
         for (; i < tk.length ; i ++) {
-            if (tk[i].value === '(') l ++;
-            if (tk[i].value === ')') l --;
+            if (tk[i].type === TokenType.SPECIAL && tk[i].value === '(') l ++;
+            if (tk[i].type === TokenType.SPECIAL && tk[i].value === ')') l --;
             if (l === -1) break; /* closing parenthesis for starting parenthesis */
         }
         return i;
@@ -104,7 +104,7 @@ export default class Parser {
         let i = stidx;
         const tk = tkSlice;
         for (; i < tk.length ; i ++) {
-            if (tk[i].value === delim) break;
+            if (tk[i].type === TokenType.SPECIAL && tk[i].value === delim) break;
         }
         if (skipPast) this.current = i;
         return tk.slice(stidx, i); /* useful slice */
@@ -123,29 +123,28 @@ export default class Parser {
         let i = (stidx ?? this.current);
         const tk = tkSlice ?? this.tokens;
         for (; i < tk.length ; i ++) {
-            if (tk[i].value === delim) break;
+            if (tk[i].type === TokenType.SPECIAL && tk[i].value === delim) break;
         }
         return i;
     }
 
     private expressionToNode(expr: Token[]) : IExpressionNode {
-        const oC = this.current;
         const theMagic = (slice: Token[]) : IExpressionNode => { // i do not know what to name this function
-            const pC = this.current;
-            let rC = pC + 0;
+            const originalCurrent = this.current;
+            let rC = originalCurrent;
             const arr: INode[] = [];
             for(; rC < slice.length ; rC++) {
-                if (slice[rC].value === '(') {
+                if (slice[rC].type === TokenType.SPECIAL && slice[rC].value === '(') {
                     const t = this.tokensUntilParen(false, slice, rC);
                     this.current = rC + 1;
                     arr.push(theMagic(t));
-                    this.current = pC;
+                    this.current = originalCurrent;
                     rC = this.parenIdx(slice, rC); // reminder for future self: this (this.parenIdx) does NOT (under ANY circumstances) need to be added to pC (starting index). i've been debugging this for a hour or something and that was the cause AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
                 } else {
                     this.current = rC;
                     arr.push(this.walk());
                     rC = this.current - 1;
-                    this.current = pC;
+                    this.current = originalCurrent;
                 }
             }
             return {
@@ -153,14 +152,13 @@ export default class Parser {
                 expr: arr
             } as IExpressionNode;
         }
-        this.current = oC;
         return theMagic(expr).expr[0] as IExpressionNode;
     }
 
     private parseExpression(): IExpressionNode {
         const tk = this.tokens;
         let i = this.current;
-        if (tk[i].value === '(') {
+        if (tk[i].type === TokenType.SPECIAL && tk[i].value === '(') {
             const t = this.tokensUntilParen();
             const a = this.expressionToNode(t);
             this.current = this.parenIdx();
@@ -190,8 +188,6 @@ export default class Parser {
         // the above code is garbage but i keep it just in case something breaks and i have to read it again (ew)
     }
 
-    // but where is that chat? go to live share at the left and at the bottom of the top part you will find "Session chat"
-
     private walk() : INode {
         let token = this.tokens[this.current];
         if (!token) throw `token oob`;
@@ -200,7 +196,7 @@ export default class Parser {
             if (token.value === '(' && !([TokenType.OTHER, TokenType.KEYWORD, TokenType.BUILTIN].includes(this.tokens[this.current + 1].type))) {
                 return this.parseExpression();
             }*/
-            if ([')', ';', '}'].includes(token.value)) { this.current++; return this.walk(); };
+            if ([')', ';', '}'].includes(token.value)) { this.current++; return this.walk(); }; // THIS STUFF SUCKS
             console.log(`\n${chalk.redBright("oh no! something went wrong:")} ${chalk.grey(this.tokens[--this.current])} ${chalk.whiteBright(this.tokens[++this.current])} ${chalk.grey(this.tokens[++this.current])} (token #${--this.current})`);
             throw "";
         }
@@ -240,7 +236,7 @@ export default class Parser {
                     else valTokVal = parseInt(valTok.value);
                 case TokenType.STRING:
                     vardec.varval = valTokVal;
-                    if (this.tokens[this.current + 4].value === '(' || this.tokens[this.current + 4].type === TokenType.OPERATOR) {
+                    if ((this.tokens[this.current + 4].type === TokenType.SPECIAL && this.tokens[this.current + 4].value === '(') || this.tokens[this.current + 4].type === TokenType.OPERATOR) {
                         this.current += 3;
                         vardec.varval = this.parseExpression();
                         this.current ++;
