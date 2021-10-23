@@ -8,52 +8,55 @@ export default class Tokenizer {
     public slice: string;
 
     constructor(code: string) {
-        this.code = code.split('\n').map(v => {
+        this.code = code.split('\n').map(line => {
             let isOnAString = false;
-            let ind = v.length;
-            v.split('').forEach((c, i) => {
+            let ind = line.length;
+            // go through each character in the line
+            line.split('').forEach((c, i) => {
+                // check if it's a quotation mark => update this.isOnAString
                 if (c === "\"") isOnAString = !isOnAString;
-                if (!isOnAString && v[i - 1] && v[i - 1] === '/' && c === '/') ind = i - 1;
+                // search for single line comments
+                if (!isOnAString && line[i - 1] && line[i - 1] === '/' && c === '/') ind = i - 1;
             });
-            return v.slice(0, ind);
+            return line.slice(0, ind);
         }).join(' ');
         this.pos = new Pos(0, 0, 0, code);
         this.slice = this.code + ""; // make sure it's not a reference, even though i don't know if it could be
     }
 
     public advance(n: number) {
-        this.pos.advance(n);
-        this.slice = this.code.slice(this.pos.idx);
-        while ([' ', '\t', ' ', '\n'].includes(this.slice[0])) this.advance(1);
+        this.pos.advance(n); // advance the position
+        this.slice = this.code.slice(this.pos.idx); // remove characters until current position
+        while ([' ', '\t', ' ', '\n'].includes(this.slice[0])) this.advance(1); // skip whitespace, it won't help us tokenize
     }
 
     public createTokens() {
-        const st = Date.now();
-        process.stdout.write(chalk.yellow("Tokenizing code..."));
+        const startTime = Date.now();
+        process.stdout.write(chalk.yellow("Tokenizing code...")); // i use process.stdout.write here instead of console.log to be able to remove the line later
 
         const tokens : Token[] = [];
 
-        while (this.slice) {
-            var token = null;
+        while (this.slice) { // loop until the slice is empty
+            let token = null; // set the token to null as first, it will help us check whether there was a match or not
             
-            // add code here...
-            for (const i of [...Array(Object.keys(TokenTypes).length).keys()]) {
-                const e = Object.values(TokenTypes)[i].exec(this.slice);
-                if (e === null) continue;
+            for (let i = 0 ; i < Object.keys(TokenTypes).length ; i ++) {
+                const tokenAttempt = Object.values(TokenTypes)[i].exec(this.slice); // execute the regexp for the token type on the slice of code // hm
+                if (tokenAttempt === null) continue; // skip to the next token type if this one doesn't match
                 
-                token = new Token(i, e[0].trim());
-                break;
+                token = new Token(i, tokenAttempt[0]/* first match is the one we care about */.trim()); // make a token if it *does* match
+                break; // & break out of the loop
             }
-            if (token === null) {
-                throw `Invalid token at position ${this.pos.toString()}`
+
+            if (token === null) { // if there were no token type matches it's invalid
+                throw `Invalid token at position ${this.pos.toString()}`;
             }
-            token = token as Token;
-            tokens.push(token);
-            this.advance(token.value.length);
+
+            tokens.push(token as Token); // add the token (typecast because now we know for certain it *is* a token)
+            this.advance((token as Token).value.length); // & advance to the next token, rinse and repeat
         }
 
-        process.stdout.write("\r\x1b[K");
-        console.log(chalk.green(`Successfully tokenized code. `) + chalk.grey(`(${Date.now() - st} ms)`));
+        process.stdout.write("\r\x1b[K"); // remove last line and move cursor to beginning
+        console.log(chalk.green(`Successfully tokenized code. `) + chalk.grey(`(${Date.now() - startTime} ms)`));
 
         return tokens;
     }
