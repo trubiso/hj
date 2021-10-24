@@ -1,4 +1,4 @@
-print("whats your name");
+/*print("whats your name");
 string name = "hello, " + input("(tell me) ") + ". i'm dad :)";
 print(name); // bool hello = false;
 string sf = stringify("e", "b");
@@ -7,11 +7,14 @@ print(name);
 print(name);
 num a = 4;
 num c = 3289;
-print(stringify(sqrt(2)), stringify(sqrt(3)));
+*/
+frac b = 3/5;
+print(((b + 2/4 * 2/4 - 18/20) * 8734/234));
+/*print(stringify(sqrt(2)), stringify(sqrt(3)));
 print((sqrt((a * (c - a) - 3)) - false * true + true - (128934 * false)));
 print((a ** sqrt(2)));
 print((5 + 1 ** 3 * 3 ** (2 / 1)))
-print((5 + 1 * 3))
+print((5 + 1 * 3))*/
 /*
 bool helo = false;
 num x = 5;

@@ -1,8 +1,9 @@
 export const TokenTypes = {
+    FRACTION: /^[\s]*(?:-)?[0-9]+\/(?:-)?[0-9]+/,
     NUMBER  : /^[\s]*(?:-)?[0-9]+(?:\.[0-9]+)?/,
     STRING  : /^[\s]*\"(?:.*?)\"/,
     BOOLEAN : /^[\s]*(?:true|false)/,
-    BUILTIN : /^[\s]*(?:num|void|string|frac|bool)\s/,
+    BUILTIN : /^[\s]*(?:frac|num|void|string|frac|bool)\s/,
     USRTYPES: /^[\s]*(?:class|function)\s/,
     KEYWORD : /^[\s]*(if|while|for|return)\s/,
     SYMBOL  : /^[\s]*[A-Za-z_][\w]*/,
@@ -11,7 +12,7 @@ export const TokenTypes = {
     OTHER   : /^[\s]*(?:\,)/
 };
 
-export type BuiltIn  = 'num' | 'void' | 'string' | 'frac' | 'bool';
+export type BuiltIn  = 'frac' | 'num' | 'void' | 'string' | 'frac' | 'bool';
 export type UsrTypes  = 'class' | 'function';
 export type Keyword  = 'if' | 'while' | 'for' | 'return';
 export type Operator = '+' | '-' | '*' | '/' | '**' | '+=' | '-=' | '*=' | '/=' | '++' | '--';
@@ -19,7 +20,7 @@ export type Operator = '+' | '-' | '*' | '/' | '**' | '+=' | '-=' | '*=' | '/=' 
 export function getTokenTypeName(i: number) { return Object.values(TokenType)[i]; }
 
 export enum TokenType {
-    NUMBER, STRING, BOOLEAN, BUILTIN, USRTYPES, KEYWORD, SYMBOL, OPERATOR, SPECIAL, OTHER
+    FRACTION, NUMBER, STRING, BOOLEAN, BUILTIN, USRTYPES, KEYWORD, SYMBOL, OPERATOR, SPECIAL, OTHER
 }
 
 export default class Token {

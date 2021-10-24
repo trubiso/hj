@@ -1,12 +1,13 @@
 import Token, { BuiltIn, getTokenTypeName, Operator, TokenType } from "./token";
 import chalk from "chalk";
+import Fraction from "./fraction";
 
 export function getNodeTypeName(n: NodeType) {
     return Object.keys(NodeType).slice(Object.keys(NodeType).length / 2)[n];
 }
 
 export enum NodeType {
-    Program, NumberLiteral, StringLiteral, Boolean, Symbol, VariableDeclaration, Expression, FunctionCall, UnparsedOperator, UnparsedSymbol, Comma, NullNode
+    Program, NumberLiteral, StringLiteral, Boolean, Fraction, Symbol, VariableDeclaration, Expression, FunctionCall, UnparsedOperator, UnparsedSymbol, Comma, NullNode
 }
 
 export interface INode {
@@ -245,6 +246,14 @@ export default class Parser {
                 value: (token.value === 'true')
             } as IValueNode;
         }
+        if (token.type === TokenType.FRACTION) {
+            const parts = token.value.split('/').map(v => parseInt(v));
+            this.current++;
+            return {
+                type: NodeType.Fraction,
+                value: new Fraction(parts[0], parts[1])
+            } as IValueNode;
+        }
         // the variable assignment starts boys
         if (token.type === TokenType.BUILTIN) {
             const nameTok = this.tokens[this.current + 1];
@@ -272,6 +281,12 @@ export default class Parser {
                     if (valTok.type !== TokenType.BOOLEAN) // fallthrough cases are cool aren't they
                     if (valTok.value.includes(".")) valTokVal = parseFloat(valTok.value);
                     else valTokVal = parseInt(valTok.value);
+                // @ts-ignore
+                case TokenType.FRACTION:
+                    if (valTok.type === TokenType.FRACTION) {
+                        const parts = valTok.value.split('/').map(v => parseInt(v));
+                        valTokVal = new Fraction(parts[0], parts[1])
+                    }
                 case TokenType.STRING:
                     vardec.varval = valTokVal;
                     if (this.tokens[this.current + 4].type === TokenType.OPERATOR) { // (this.tokens[this.current + 4].type === TokenType.SPECIAL && this.tokens[this.current + 4].value === '(') || 

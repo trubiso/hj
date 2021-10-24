@@ -50,6 +50,7 @@ export default class Tokenizer {
         process.stdout.write(chalk.yellow("Tokenizing code...")); // i use process.stdout.write here instead of console.log to be able to remove the line later
 
         const tokens : Token[] = [];
+        this.advance(0);
 
         while (this.slice) { // loop until the slice is empty
             let token = null; // set the token to null as first, it will help us check whether there was a match or not

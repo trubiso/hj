@@ -2,6 +2,7 @@ import chalk from "chalk";
 import prompt from "prompt-sync";
 import { EvaluationError, TypeError } from "./errors";
 import ExpressionEvaluator from "./expressionEvaluator";
+import Fraction from "./fraction";
 import { INode, ITopNode, IVardecNode, ISymbolNode, NodeType, IExpressionNode, IValueNode, IOperatorNode, IFunctionCallNode } from "./parser";
 import { BuiltIn } from "./token";
 
@@ -18,7 +19,7 @@ export interface IDummy<T> { // this interface sucks
 export type ExprType = (INode | IVar | ExprType)[]
 
 export const standardFunctions: any = {
-    print: console.log,
+    print: (...v: any[]) => console.log(...v.map(r => r instanceof Fraction ? r.toString() : r)),
     stringify: (...v: any[]) => v.map((y: any) => y.toString()).join(''),
     sqrt: Math.sqrt,
     input: (v: string) => prompt({ sigint: true } as prompt.Config)(v)
@@ -59,6 +60,9 @@ export default class Evaluator {
         case NodeType.Boolean:
             p = n as IValueNode;
             return `${'\t'.repeat(il)}[Boolean literal ${p.value}]`;
+        case NodeType.Fraction:
+            p = n as IValueNode;
+            return `${'\t'.repeat(il)}[Fraction literal ${p.value.toString()}]`;
         case NodeType.Symbol: case NodeType.UnparsedSymbol:
             p = n as ISymbolNode;
             return `${'\t'.repeat(il)}[Symbol ${p.name}]`;
@@ -97,8 +101,9 @@ export default class Evaluator {
             case NodeType.Symbol:
                 return this.parseSymbol(v as ISymbolNode).val;
             case NodeType.StringLiteral:
-                return (v as IValueNode).value;
             case NodeType.NumberLiteral:
+            case NodeType.Boolean:
+            case NodeType.Fraction:
                 return (v as IValueNode).value;
             case NodeType.Expression:
                 let e = this.parseExpression(v as IExpressionNode);
@@ -131,6 +136,11 @@ export default class Evaluator {
                 case 'num':
                     return {
                         type: NodeType.NumberLiteral,
+                        value: r.val
+                    } as IValueNode;
+                case 'frac':
+                    return {
+                        type: NodeType.Fraction,
                         value: r.val
                     } as IValueNode;
                 default:
@@ -208,7 +218,7 @@ export default class Evaluator {
         case 'num':
             if (spsType === 'number')   return true; break;
         case 'frac':
-            throw "Frac not yet implemented" // TODO: Implement
+            if (spsType === 'fraction') return true; break;
         case 'void':
             return false; // no var will ever need to be a void
         }
@@ -217,7 +227,15 @@ export default class Evaluator {
 
     private evaluateVariableDeclaration(n: IVardecNode) {
         this.variables.filter(v => v.name !== n.varname);
-        if (['string', 'number', 'boolean'].includes(typeof n.varval)) {
+        if (n.varval instanceof Fraction) {
+            console.log("this is great");
+            if (!this.typeCheck(n.vartype, "fraction")) throw TypeError.vardecTypeCheckError(n);
+            this.variables.push({
+                name: n.varname,
+                type: n.vartype,
+                val : n.varval
+            } as IVar);
+        } else if (['string', 'number', 'boolean'].includes(typeof n.varval)) {
             if (!this.typeCheck(n.vartype, typeof n.varval)) throw TypeError.vardecTypeCheckError(n);
             this.variables.push({
                 name: n.varname,

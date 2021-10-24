@@ -1,9 +1,10 @@
 import { getNodeTypeName, IExpressionNode, IOperatorNode, IValueNode, NodeType } from "./parser";
+import { Operator } from "./token";
 
 export default class ExpressionEvaluator {
 
-    private static operatorPriorities: string[][] = [['**'], ['*', '/'], ['+', '-']];
-    private static possibleValueTypes: NodeType[] = [NodeType.Boolean, NodeType.NumberLiteral, NodeType.StringLiteral];
+    private static operatorPriorities: Operator[][] = [['**'], ['*', '/'], ['+', '-']];
+    private static possibleValueTypes: NodeType[] = [NodeType.Boolean, NodeType.NumberLiteral, NodeType.StringLiteral, NodeType.Fraction];
 
     private static convertBoolNodeToNumberNode(boolNode: IValueNode): IValueNode {
         boolNode.type = NodeType.NumberLiteral;
@@ -70,12 +71,37 @@ export default class ExpressionEvaluator {
             default:
                 throw `Unsupported operator for string: ${operator.operator}`;
             }
+        } else if (value1.type === NodeType.Fraction) {
+            switch (operator.operator) {
+            case '+':
+                return {
+                    type: value1.type,
+                    value: value1.value.add(value2.value)
+                } as IValueNode;
+            case '-':
+                return {
+                    type: value1.type,
+                    value: value1.value.subtract(value2.value)
+                } as IValueNode;
+            case '*':
+                return {
+                    type: value1.type,
+                    value: value1.value.multiply(value2.value)
+                } as IValueNode;
+            case '/':
+                return {
+                    type: value1.type,
+                    value: value1.value.divide(value2.value)
+                } as IValueNode;
+            default:
+                throw `Unsupported operator for frac: ${operator.operator}`;
+            }
         }
         throw 'What the hell are you trying to operate with???'; 
     }
 
     // this function takes a list of the operators to search for and the expression node where it will search, and finds the first operator in that expression node that is included in the given operator list
-    private static searchForNextOperator(operatorList: string[], expr: IExpressionNode) : number | null {
+    private static searchForNextOperator(operatorList: Operator[], expr: IExpressionNode) : number | null {
         let nodeIndex: number = 0;
         // go through all sub-nodes
         for (const subNode of expr.expr) {
