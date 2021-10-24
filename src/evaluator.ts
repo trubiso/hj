@@ -73,6 +73,7 @@ export default class Evaluator {
                 return v;
             }
         }
+        // THERE IS CODE TO THE RIGHT OF THE FOLLOWING COMMENT
         const expr : any[] /* actually can have either INodes, IVars or expressions turned into arrays. too tired to write a type annotation for that if it's even possible*/ = n.expr.map(p);
 
         // Convert into mathematical expression

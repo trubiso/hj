@@ -128,23 +128,31 @@ export default class Parser {
         return i;
     }
 
+    // Converts a list of tokens to a list of nodes
     private expressionToNode(expr: Token[]) : IExpressionNode {
         const theMagic = (slice: Token[]) : IExpressionNode => { // i do not know what to name this function
-            const originalCurrent = this.current;
-            let rC = originalCurrent;
+            const originalIndex = this.current;
+            let workingIndex = originalIndex;
             const arr: INode[] = [];
-            for(; rC < slice.length ; rC++) {
-                if (slice[rC].type === TokenType.SPECIAL && slice[rC].value === '(') {
-                    const t = this.tokensUntilParen(false, slice, rC);
-                    this.current = rC + 1;
+            // go through each token in the slice
+            for(; workingIndex < slice.length ; workingIndex++) {
+                // if the current token is a starting paranthesis, recall the "theMagic" function with the slice inside of the paranthesis
+                if (slice[workingIndex].type === TokenType.SPECIAL && slice[workingIndex].value === '(') {
+                    const t = this.tokensUntilParen(false, slice, workingIndex);
+                    // for the time the paranthesis get evaluated, set this.current to where they start for it to work
+                    this.current = workingIndex + 1;
                     arr.push(theMagic(t));
-                    this.current = originalCurrent;
-                    rC = this.parenIdx(slice, rC); // reminder for future self: this (this.parenIdx) does NOT (under ANY circumstances) need to be added to pC (starting index). i've been debugging this for a hour or something and that was the cause AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+                    // and then reset it
+                    this.current = originalIndex;
+                    // continue working after the closing paranthesis
+                    workingIndex = this.parenIdx(slice, workingIndex); // reminder for future self: this (this.parenIdx) does NOT (under ANY circumstances) need to be added to pC (starting index). i've been debugging this for a hour or something and that was the cause AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
                 } else {
-                    this.current = rC;
+                    // set this.current to workingIndex for the sake of the walk function (yes this is pretty messy)
+                    this.current = workingIndex;
                     arr.push(this.walk());
-                    rC = this.current - 1;
-                    this.current = originalCurrent;
+                    workingIndex = this.current - 1;
+                    // and reset it
+                    this.current = originalIndex;
                 }
             }
             return {
@@ -158,13 +166,15 @@ export default class Parser {
     private parseExpression(): IExpressionNode {
         const tk = this.tokens;
         let i = this.current;
+        // if there are paranthesis convert the tokens inside of them to a node
         if (tk[i].type === TokenType.SPECIAL && tk[i].value === '(') {
-            const t = this.tokensUntilParen();
-            const a = this.expressionToNode(t);
+            const tokens = this.tokensUntilParen();
+            const expressionNode = this.expressionToNode(tokens);
             this.current = this.parenIdx();
-            return a;
+            return expressionNode;
         } else {
             // life hack (DO NOT TRY) (this code is garbage)
+            // if there are no paranthesis just create them lol
             this.tokens = [...this.tokens.slice(0, this.current), new Token(TokenType.SPECIAL, '('), // this IS going to break
             ...this.tokens.slice(this.current, this.delimIdx(';')), new Token(TokenType.SPECIAL, ')'),
             ...this.tokens.slice(this.delimIdx(';'))];
@@ -185,12 +195,12 @@ export default class Parser {
         } else {
             throw `Unexpected ${valTok.value} in assignment (${token.value} ${nameTok.value} = ${valTok.value})`;
         }*/
-        // the above code is garbage but i keep it just in case something breaks and i have to read it again (ew)
+        // the above code is garbage but i keep it just in case something breaks and i have to read it again (ew) (I hope not)
     }
 
     private walk() : INode {
         let token = this.tokens[this.current];
-        if (!token) throw `token oob`;
+        if (!token) throw `The program went too far...`;
         if (token.type === TokenType.SPECIAL) {
             /*if (this.tokens[this.current + 1])
             if (token.value === '(' && !([TokenType.OTHER, TokenType.KEYWORD, TokenType.BUILTIN].includes(this.tokens[this.current + 1].type))) {
@@ -214,6 +224,7 @@ export default class Parser {
                 value: token.value
             } as IValueNode;
         }
+        // the variable assignment starts boys
         if (token.type === TokenType.BUILTIN) {
             const nameTok = this.tokens[this.current + 1];
             const asgnTok = this.tokens[this.current + 2];
@@ -225,6 +236,7 @@ export default class Parser {
                     varname: nameTok.value
                 } as IVardecNode;
                 let valTokVal: any = valTok.value;
+                // go through each possible type of value for the variable
                 switch(valTok.type) {
                 case TokenType.BUILTIN:
                 case TokenType.KEYWORD:
@@ -258,8 +270,7 @@ export default class Parser {
                     if (valTok.value === '(') {
                         this.current += 3;
                         vardec.varval = this.parseExpression();
-                        this.current ++; // i know this is too much maths for you
-                        this.current -= 3; // rewind because later we're adding 4 and 4-3 is 1 which skips the closing parenthesis
+                        this.current -= 2; // rewind because later we're adding 3 and 3-2 is 1 which skips the closing parenthesis
                     } else {
                         throw `Unexpected ${valTok.value} in assignment (${token.value} ${nameTok.value} = ${valTok.value})`;
                     }
