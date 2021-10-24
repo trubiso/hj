@@ -6,7 +6,7 @@ export const TokenTypes = {
     USRTYPES: /^[\s]*(?:class|function)\s/,
     KEYWORD : /^[\s]*(if|while|for|return)\s/,
     SYMBOL  : /^[\s]*[A-Za-z_][\w]*/,
-    OPERATOR: /^[\s]*(?:(?:[+\-\/*]?=)|(?:[+\-]{2})|(?:[+\-\/*\=]))/,
+    OPERATOR: /^[\s]*(?:(?:[+\-\/*]?=)|(?:[+\-\*]{2})|(?:[+\-\/*\=]))/,
     SPECIAL : /^[\s]*(?:[\{\}\(\);:]|=>)/,
     OTHER   : /^[\s]*(?:\,)/
 };
@@ -14,7 +14,7 @@ export const TokenTypes = {
 export type BuiltIn  = 'num' | 'void' | 'string' | 'frac' | 'bool';
 export type UsrTypes  = 'class' | 'function';
 export type Keyword  = 'if' | 'while' | 'for' | 'return';
-export type Operator = '+' | '-' | '*' | '/' | '+=' | '-=' | '*=' | '/=' | '++' | '--';
+export type Operator = '+' | '-' | '*' | '/' | '**' | '+=' | '-=' | '*=' | '/=' | '++' | '--';
 
 export function getTokenTypeName(i: number) { return Object.values(TokenType)[i]; }
 

@@ -1,6 +1,10 @@
 import Token, { BuiltIn, getTokenTypeName, Operator, TokenType } from "./token";
 import chalk from "chalk";
 
+export function getNodeTypeName(n: NodeType) {
+    return Object.keys(NodeType).slice(Object.keys(NodeType).length / 2)[n];
+}
+
 export enum NodeType {
     Program, NumberLiteral, StringLiteral, Boolean, Symbol, VariableDeclaration, Expression, FunctionCall, UnparsedOperator, UnparsedSymbol, Comma, NullNode
 }
@@ -203,29 +207,35 @@ export default class Parser {
     private walk() : INode {
         let token = this.tokens[this.current];
         if (!token) return {type: NodeType.NullNode}; // throw `The program went too far... (${this.current} > ${this.tokens.length - 1})`;
+        // Check if the token is a special character like "(", ")" or ";"
         if (token.type === TokenType.SPECIAL) {
+            // If there is an expression coming (introduced with "("), parse it
             if (this.tokens[this.current + 1])
             if (token.value === '(' && !([TokenType.OTHER, TokenType.KEYWORD, TokenType.BUILTIN].includes(this.tokens[this.current + 1].type))) {
                 const e = this.parseExpression();
                 this.current++;
                 return e;
             }
+            // if the current token ends something, just skip it and call walk for the next tokens
             if ([')', ';', '}'].includes(token.value)) { this.current++; return this.walk(); }; // THIS STUFF SUCKS
             console.log(`\n${chalk.redBright("oh no! something went wrong:")} ${chalk.grey(this.tokens[--this.current])} ${chalk.whiteBright(this.tokens[++this.current])} ${chalk.grey(this.tokens[++this.current])} (token #${--this.current})`);
             throw "";
         }
+        // If the token type is a number, add it as a value node
         if (token.type === TokenType.NUMBER) {
             this.current++;
             return {
                 type: NodeType.NumberLiteral,
-                value: token.value
+                value: token.value.includes(".") ? parseFloat(token.value) : parseInt(token.value)
             } as IValueNode;
         }
+        // if the token type is a string, add it as a value node
         if (token.type === TokenType.STRING) {
             this.current++;
             return {
                 type: NodeType.StringLiteral,
-                value: token.value
+                // remove quotation marks
+                value: token.value.slice(1, -1)
             } as IValueNode;
         }
         if (token.type === TokenType.BOOLEAN) {

@@ -1,5 +1,7 @@
 import chalk from "chalk";
 import prompt from "prompt-sync";
+import { EvaluationError, TypeError } from "./errors";
+import ExpressionEvaluator from "./expressionEvaluator";
 import { INode, ITopNode, IVardecNode, ISymbolNode, NodeType, IExpressionNode, IValueNode, IOperatorNode, IFunctionCallNode } from "./parser";
 import { BuiltIn } from "./token";
 
@@ -31,7 +33,11 @@ export default class Evaluator {
         this.variables = [];
     }
 
-    public prettifyNode(n: INode, il = 0 /* indentation level */) : string {
+    public prettyPrint() {
+        console.log(this.prettifyNode(this.ast));
+    }
+
+    private prettifyNode(n: INode, il = 0 /* indentation level */) : string {
         let p;
         switch (n.type) {
         case NodeType.VariableDeclaration:
@@ -50,6 +56,9 @@ export default class Evaluator {
         case NodeType.NumberLiteral:
             p = n as IValueNode;
             return `${'\t'.repeat(il)}[Number literal ${p.value}]`;
+        case NodeType.Boolean:
+            p = n as IValueNode;
+            return `${'\t'.repeat(il)}[Boolean literal ${p.value}]`;
         case NodeType.Symbol: case NodeType.UnparsedSymbol:
             p = n as ISymbolNode;
             return `${'\t'.repeat(il)}[Symbol ${p.name}]`;
@@ -71,13 +80,12 @@ export default class Evaluator {
     private parseSymbol(s: ISymbolNode, c = true) : IVar {
         const r = this.variables.find(y => y.name === s.name);
         if (!r) {
-            console.log(chalk.redBright(`symbol ${s.name} not found `) + chalk.grey(`(current symbols: ${this.variables.map(v => v.name).join(', ')})`));
-            throw "";
+            throw TypeError.symbolNotFound(s, this.variables);
         }
         const t = {
             name: r.name,
             type: r.type,
-            val : r.type === 'string' ? r.val.slice(1, -1) : r.val
+            val : r.val
         } as IVar;
         return t;
     }
@@ -89,15 +97,16 @@ export default class Evaluator {
             case NodeType.Symbol:
                 return this.parseSymbol(v as ISymbolNode).val;
             case NodeType.StringLiteral:
-                return (v as IValueNode).value.slice(1, -1);
+                return (v as IValueNode).value;
             case NodeType.NumberLiteral:
                 return (v as IValueNode).value;
             case NodeType.Expression:
                 let e = this.parseExpression(v as IExpressionNode);
-                if (typeof e === "string") e = e.slice(1, -1);
                 return e;
             case NodeType.UnparsedOperator:
                 return (v as IOperatorNode).operator;
+            case NodeType.FunctionCall:
+                return this.evaluateFunctionCall(v as IFunctionCallNode); // WARNING: this could cause recursiveness
             default:
                 return null;
             }
@@ -105,7 +114,49 @@ export default class Evaluator {
     }
 
     private parseExpression(n : IExpressionNode) : any {
-        // Parse symbols into IVars
+        const p = (v: INode) : INode => { // this name is VERY descriptive. what does this function do? it p
+            if (v.type === NodeType.UnparsedSymbol) {
+                const r = this.parseSymbol(v as ISymbolNode, false);
+                switch(r.type) {
+                case 'string':
+                    return {
+                        type: NodeType.StringLiteral,
+                        value: r.val
+                    } as IValueNode;
+                case 'bool':
+                    return {
+                        type: NodeType.Boolean,
+                        value: r.val
+                    } as IValueNode;
+                case 'num':
+                    return {
+                        type: NodeType.NumberLiteral,
+                        value: r.val
+                    } as IValueNode;
+                default:
+                    throw "what"; // I feel that
+                }
+            } else if (v.type === NodeType.Expression) {
+                const e = (v as IExpressionNode).expr.map(p);
+                return {
+                    type: NodeType.Expression,
+                    expr: e
+                } as IExpressionNode;
+            } else if (v.type === NodeType.FunctionCall) {
+                const t = this.evaluateFunctionCall(v as IFunctionCallNode);
+                return {type: typeof t === "string" ? NodeType.StringLiteral : (typeof t === "number" ? NodeType.NumberLiteral : NodeType.Symbol), value: t} as IValueNode;
+            } else {
+                return v as INode;
+            }
+        }
+ 
+        const expr : IExpressionNode = {
+            type: NodeType.Expression,
+            expr: n.expr.map(p)
+        }
+
+        return ExpressionEvaluator.evaluateExpressionNode(expr).value;
+        /*// Parse symbols into IVars
         const p = (v: INode | IVar) : any => { // this name is VERY descriptive. what does this function do? it p
             if (v.type === NodeType.UnparsedSymbol) {
                 return this.parseSymbol(v as ISymbolNode, false);
@@ -113,13 +164,14 @@ export default class Evaluator {
                 return (v as IExpressionNode).expr.map(p);
             } else if (v.type === NodeType.FunctionCall) {
                 const t = this.evaluateFunctionCall(v as IFunctionCallNode);
-                return {type: typeof t === "string" ? NodeType.StringLiteral : (typeof t === "number" ? NodeType.NumberLiteral : NodeType.Symbol), value: typeof t === "string" ? `"${t}"` : t} as IValueNode;
+                return {type: typeof t === "string" ? NodeType.StringLiteral : (typeof t === "number" ? NodeType.NumberLiteral : NodeType.Symbol), value: t} as IValueNode;
             } else {
                 return v;
             }
         }
-        
+
         const expr : ExprType[] = n.expr.map(p);
+        console.log(expr);
 
         // Convert into mathematical expression
         let exprStr = "";
@@ -134,7 +186,8 @@ export default class Evaluator {
                 if (typeof v.type === "string") {
                     exprStr += `(${(v as IVar).val})`;
                 } else {
-                    exprStr += `(${(v as IValueNode).value})`;
+                    if ((v as IValueNode).type === NodeType.StringLiteral) exprStr += `("${(v as IValueNode).value}")`;
+                    else exprStr += `(${(v as IValueNode).value})`;
                 }
             } else {
                 exprStr += (v as IOperatorNode).operator;
@@ -142,8 +195,8 @@ export default class Evaluator {
         }
         expr.forEach(r);
         const o = eval(exprStr);
-        if (typeof o === 'string') return `"${o}"`;
-        return o;
+        //if (typeof o === 'string') return `"${o}"`;
+        return o;*/
     }
 
     private typeCheck(type: BuiltIn, spsType: string) {
@@ -165,7 +218,7 @@ export default class Evaluator {
     private evaluateVariableDeclaration(n: IVardecNode) {
         this.variables.filter(v => v.name !== n.varname);
         if (['string', 'number', 'boolean'].includes(typeof n.varval)) {
-            if (!this.typeCheck(n.vartype, typeof n.varval)) throw `Expected value of ${n.varname} (${n.varval}) to be a ${n.vartype}; got ${typeof n.varval} instead.`;
+            if (!this.typeCheck(n.vartype, typeof n.varval)) throw TypeError.vardecTypeCheckError(n);
             this.variables.push({
                 name: n.varname,
                 type: n.vartype,
@@ -180,11 +233,11 @@ export default class Evaluator {
                 } as IVar);
             } else if (n.varval.type === NodeType.FunctionCall) {
                 const e = this.evaluateFunctionCall(n.varval);
-                if (!this.typeCheck(n.vartype, typeof e)) throw `Expected value of ${n.varname} (${n.varval}) to be a ${n.vartype}; got ${typeof n.varval} instead.`;
+                if (!this.typeCheck(n.vartype, typeof e)) throw TypeError.vardecTypeCheckError(n);
                 this.variables.push({
                     name: n.varname,
                     type: n.vartype,
-                    val : typeof e === 'string' ? `"${e}"` : e
+                    val : e
                 });
             } else { // there is only one thing it can be now, a Symbol.
                 const vv = n.varval as ISymbolNode;
@@ -203,10 +256,9 @@ export default class Evaluator {
 
     private evaluateFunctionCall(n: IFunctionCallNode) {
         if (standardFunctions[n.name]) {
-            // console.log(this.nodesToLiterals(n.args));
             return standardFunctions[n.name](...this.nodesToLiterals(n.args));
         } else {
-            throw `Function ${n.name} does not exist.`;
+            throw TypeError.functionNotFound(n);
         }
     }
 
@@ -219,7 +271,7 @@ export default class Evaluator {
             this.evaluateFunctionCall(node as IFunctionCallNode);
             break;
         default:
-            throw `Invalid program structure (a command has to be a variable declaration or a function call, but it is ${Object.keys(NodeType).slice(Object.keys(NodeType).length / 2)[node.type]}).`;
+            throw EvaluationError.invalidProgramStructure(node);
         }
     }
 
