@@ -10,4 +10,5 @@ const tokens = tokenizer.createTokens();
 const parser = new Parser(tokens);
 const ast = parser.parse();
 const evaluator : Evaluator = new Evaluator(ast);
+// console.log(evaluator.prettifyNode(ast));
 evaluator.evaluate();

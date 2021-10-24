@@ -7,8 +7,8 @@ export default class Tokenizer {
     public pos: Pos;
     public slice: string;
 
-    constructor(code: string) {
-        this.code = code.split('\n').map(line => {
+    private removeCommentsFromCode(code: string) {
+        const s = code.split('\n').map(line => { // step 1 is to remove one-line comments
             let isOnAString = false;
             let ind = line.length;
             // go through each character in the line
@@ -20,6 +20,21 @@ export default class Tokenizer {
             });
             return line.slice(0, ind);
         }).join(' ');
+        let isOnAString  = false;
+        let isCommenting = false;
+        let o = "";
+        for (let i = 0 ; i < s.length ; i ++) {
+            const c = s[i];
+            if (c === "\"" && !isCommenting) isOnAString = !isOnAString;
+            if (c === '/' && s[i + 1] === '*' && !isOnAString && !isCommenting
+            ||  s[i - 2] === '*' && s[i - 1] === '/' && !isOnAString &&  isCommenting) isCommenting = !isCommenting;
+            if (!isCommenting) o += s[i];
+        }
+        return o;
+    }
+
+    constructor(code: string) {
+        this.code = this.removeCommentsFromCode(code);
         this.pos = new Pos(0, 0, 0, code);
         this.slice = this.code + ""; // make sure it's not a reference, even though i don't know if it could be
     }

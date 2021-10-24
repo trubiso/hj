@@ -2,7 +2,7 @@ import Token, { BuiltIn, getTokenTypeName, Operator, TokenType } from "./token";
 import chalk from "chalk";
 
 export enum NodeType {
-    Program, NumberLiteral, StringLiteral, Symbol, VariableDeclaration, Expression, FunctionCall, UnparsedOperator, UnparsedSymbol, Comma
+    Program, NumberLiteral, StringLiteral, Symbol, VariableDeclaration, Expression, FunctionCall, UnparsedOperator, UnparsedSymbol, Comma, NullNode
 }
 
 export interface INode {
@@ -179,7 +179,9 @@ export default class Parser {
             ...this.tokens.slice(this.current, this.delimIdx(';')), new Token(TokenType.SPECIAL, ')'),
             ...this.tokens.slice(this.delimIdx(';'))];
 
-            return this.parseExpression(); // i hope this doesnt make it recursive (spoiler: it did at some point but i fix)
+            const e = this.parseExpression(); // i hope this doesnt make it recursive (spoiler: it did at some point but i fix)
+            this.current++;
+            return e;
         }
         /*if (tk[i].value === '(') {
             this.current += 4;
@@ -200,12 +202,14 @@ export default class Parser {
 
     private walk() : INode {
         let token = this.tokens[this.current];
-        if (!token) throw `The program went too far... (token index: ${this.current})`;
+        if (!token) return {type: NodeType.NullNode}; // throw `The program went too far... (${this.current} > ${this.tokens.length - 1})`;
         if (token.type === TokenType.SPECIAL) {
-            /*if (this.tokens[this.current + 1])
+            if (this.tokens[this.current + 1])
             if (token.value === '(' && !([TokenType.OTHER, TokenType.KEYWORD, TokenType.BUILTIN].includes(this.tokens[this.current + 1].type))) {
-                return this.parseExpression();
-            }*/
+                const e = this.parseExpression();
+                this.current++;
+                return e;
+            }
             if ([')', ';', '}'].includes(token.value)) { this.current++; return this.walk(); }; // THIS STUFF SUCKS
             console.log(`\n${chalk.redBright("oh no! something went wrong:")} ${chalk.grey(this.tokens[--this.current])} ${chalk.whiteBright(this.tokens[++this.current])} ${chalk.grey(this.tokens[++this.current])} (token #${--this.current})`);
             throw "";
@@ -261,6 +265,18 @@ export default class Parser {
                     else vardec.varval = false;
                     break;
                 case TokenType.SYMBOL:
+                    if (this.tokens[this.current + 4].type === TokenType.OPERATOR) {
+                        this.current += 3;
+                        vardec.varval = this.parseExpression();
+                        this.current ++;
+                        this.current -= 5; // just get to the semicolon
+                        break;
+                    } else if (this.tokens[this.current + 4].type === TokenType.SPECIAL && this.tokens[this.current + 4].value === '(') {
+                        this.current += 3;
+                        vardec.varval = this.walk();
+                        this.current -= 4;
+                        break;
+                    }
                     vardec.varval = {
                         type: NodeType.Symbol,
                         name: valTok.value
@@ -304,8 +320,10 @@ export default class Parser {
                     } as IFunctionCallNode;
                     this.current++;
                     while(true) {
-                        if (this.tokens[this.current].value === ')') break;
+                        if (this.tokens[this.current].type === TokenType.SPECIAL && this.tokens[this.current].value === ')') break;
+                        //console.log(this.tokens[this.current]);
                         const t = this.walk();
+                        //console.log(this.tokens[this.current]);
                         if (t.type !== NodeType.Comma) funcall.args.push(t);
                     }
                     this.current++; // skip closing parenthesis
@@ -343,7 +361,7 @@ export default class Parser {
                 continue;
             }
             const n = this.walk();
-            ast.body.push(this.walk());
+            ast.body.push(n);
         }
 
         process.stdout.write("\r\x1b[K");

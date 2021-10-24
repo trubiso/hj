@@ -1,6 +1,11 @@
 print("whats your name");
 string name = "hello, " + input("(tell me) ") + ". i'm dad :)";
 print(name); // bool hello = false;
+string sf = stringify("e", "b");
+print(sf);
+print(name);
+print(name);
+/*
 bool helo = false;
 num x = 5;
 num y = 10;
@@ -8,5 +13,5 @@ num z = 3 + x - y;
 num r = x;
 num a = 1045;
 num f = x + y + z + r + a;
-string sf = "e" + "b";
-print(sf);
+print((helo + x + y + z + r + a + f))
+*/
