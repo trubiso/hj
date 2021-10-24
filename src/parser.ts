@@ -2,7 +2,7 @@ import Token, { BuiltIn, getTokenTypeName, Operator, TokenType } from "./token";
 import chalk from "chalk";
 
 export enum NodeType {
-    Program, NumberLiteral, StringLiteral, Symbol, VariableDeclaration, Expression, FunctionCall, UnparsedOperator, UnparsedSymbol, Comma, NullNode
+    Program, NumberLiteral, StringLiteral, Boolean, Symbol, VariableDeclaration, Expression, FunctionCall, UnparsedOperator, UnparsedSymbol, Comma, NullNode
 }
 
 export interface INode {
@@ -228,6 +228,13 @@ export default class Parser {
                 value: token.value
             } as IValueNode;
         }
+        if (token.type === TokenType.BOOLEAN) {
+            this.current++;
+            return {
+                type: NodeType.Boolean,
+                value: (token.value === 'true')
+            } as IValueNode;
+        }
         // the variable assignment starts boys
         if (token.type === TokenType.BUILTIN) {
             const nameTok = this.tokens[this.current + 1];
@@ -247,22 +254,23 @@ export default class Parser {
                 case TokenType.OPERATOR:
                     throw `Tried to parse assignment "${token.value} ${nameTok.value} = ${valTok.value}" but ${valTok.value} is of type ${getTokenTypeName(valTok.type)} (unsupported).`
                 // @ts-ignore
+                case TokenType.BOOLEAN:
+                    if (valTok.value === 'true') vardec.varval = true;
+                    else vardec.varval = false;
+                // @ts-ignore
                 case TokenType.NUMBER:
+                    if (valTok.type !== TokenType.BOOLEAN) // fallthrough cases are cool aren't they
                     if (valTok.value.includes(".")) valTokVal = parseFloat(valTok.value);
                     else valTokVal = parseInt(valTok.value);
                 case TokenType.STRING:
                     vardec.varval = valTokVal;
-                    if ((this.tokens[this.current + 4].type === TokenType.SPECIAL && this.tokens[this.current + 4].value === '(') || this.tokens[this.current + 4].type === TokenType.OPERATOR) {
+                    if (this.tokens[this.current + 4].type === TokenType.OPERATOR) { // (this.tokens[this.current + 4].type === TokenType.SPECIAL && this.tokens[this.current + 4].value === '(') || 
                         this.current += 3;
                         vardec.varval = this.parseExpression();
                         this.current ++;
                         this.current -= 5; // just get to the semicolon
                         break;
                     }
-                    break;
-                case TokenType.BOOLEAN:
-                    if (valTok.value === 'true') vardec.varval = true;
-                    else vardec.varval = false;
                     break;
                 case TokenType.SYMBOL:
                     if (this.tokens[this.current + 4].type === TokenType.OPERATOR) {

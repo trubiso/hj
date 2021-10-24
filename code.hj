@@ -5,6 +5,10 @@ string sf = stringify("e", "b");
 print(sf);
 print(name);
 print(name);
+num a = 4;
+num c = 3289;
+print((sqrt(2)));
+print((sqrt((a * (c - a) - 3)) - false * true + true - (128934 * false)));
 /*
 bool helo = false;
 num x = 5;
