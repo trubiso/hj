@@ -136,15 +136,15 @@ export default class Parser {
             const arr: INode[] = [];
             // go through each token in the slice
             for(; workingIndex < slice.length ; workingIndex++) {
-                // if the current token is a starting paranthesis, recall the "theMagic" function with the slice inside of the paranthesis
+                // if the current token is a starting parenthesis, recall the "theMagic" function with the slice inside of the parentheses
                 if (slice[workingIndex].type === TokenType.SPECIAL && slice[workingIndex].value === '(') {
                     const t = this.tokensUntilParen(false, slice, workingIndex);
-                    // for the time the paranthesis get evaluated, set this.current to where they start for it to work
+                    // set this.current to the starting parenthesis index for "theMagic" to work
                     this.current = workingIndex + 1;
                     arr.push(theMagic(t));
-                    // and then reset it
+                    // and reset it
                     this.current = originalIndex;
-                    // continue working after the closing paranthesis
+                    // continue working after the closing parenthesis
                     workingIndex = this.parenIdx(slice, workingIndex); // reminder for future self: this (this.parenIdx) does NOT (under ANY circumstances) need to be added to pC (starting index). i've been debugging this for a hour or something and that was the cause AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
                 } else {
                     // set this.current to workingIndex for the sake of the walk function (yes this is pretty messy)
@@ -166,7 +166,7 @@ export default class Parser {
     private parseExpression(): IExpressionNode {
         const tk = this.tokens;
         let i = this.current;
-        // if there are paranthesis convert the tokens inside of them to a node
+        // if there are parentheses convert the tokens inside of them to a node
         if (tk[i].type === TokenType.SPECIAL && tk[i].value === '(') {
             const tokens = this.tokensUntilParen();
             const expressionNode = this.expressionToNode(tokens);
@@ -174,7 +174,7 @@ export default class Parser {
             return expressionNode;
         } else {
             // life hack (DO NOT TRY) (this code is garbage)
-            // if there are no paranthesis just create them lol
+            // if there are no parentheses just create them lol
             this.tokens = [...this.tokens.slice(0, this.current), new Token(TokenType.SPECIAL, '('), // this IS going to break
             ...this.tokens.slice(this.current, this.delimIdx(';')), new Token(TokenType.SPECIAL, ')'),
             ...this.tokens.slice(this.delimIdx(';'))];
@@ -200,7 +200,7 @@ export default class Parser {
 
     private walk() : INode {
         let token = this.tokens[this.current];
-        if (!token) throw `The program went too far...`;
+        if (!token) throw `The program went too far... (token index: ${this.current})`;
         if (token.type === TokenType.SPECIAL) {
             /*if (this.tokens[this.current + 1])
             if (token.value === '(' && !([TokenType.OTHER, TokenType.KEYWORD, TokenType.BUILTIN].includes(this.tokens[this.current + 1].type))) {

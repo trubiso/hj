@@ -13,6 +13,8 @@ export interface IDummy<T> { // this interface sucks
     d: T
 };
 
+export type ExprType = (INode | IVar | ExprType)[]
+
 export const standardFunctions: any = {
     print: console.log,
     toString: (v: any) => v.toString(),
@@ -73,8 +75,8 @@ export default class Evaluator {
                 return v;
             }
         }
-        // THERE IS CODE TO THE RIGHT OF THE FOLLOWING COMMENT
-        const expr : any[] /* actually can have either INodes, IVars or expressions turned into arrays. too tired to write a type annotation for that if it's even possible*/ = n.expr.map(p);
+        
+        const expr : ExprType[] = n.expr.map(p);
 
         // Convert into mathematical expression
         let exprStr = "";
