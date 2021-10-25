@@ -3,7 +3,7 @@ import { Operator } from "./token";
 
 export default class ExpressionEvaluator {
 
-    private static operatorPriorities: Operator[][] = [['**'], ['*', '/'], ['+', '-']];
+    private static operatorPriorities: Operator[][] = [['**'], ['*', '/'], ['+', '-'], ['==', '<', '<=', '>', '>=', '!=']];
     private static possibleValueTypes: NodeType[] = [NodeType.Boolean, NodeType.NumberLiteral, NodeType.StringLiteral, NodeType.Fraction];
 
     private static convertBoolNodeToNumberNode(boolNode: IValueNode): IValueNode {
@@ -17,6 +17,9 @@ export default class ExpressionEvaluator {
     }
 
     private static evaluateSimpleOperation(value1: IValueNode, value2: IValueNode, operator: IOperatorNode): IValueNode {
+
+        // TODO: Logical operators (at the top)
+        // TODO: seperate this function into other files in a sub-folder because it's gonna get more messy
 
         // convert booleans to int to perform operations with them
         if (value1.type === NodeType.Boolean) {
