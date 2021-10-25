@@ -1,5 +1,5 @@
 export const TokenTypes = {
-    FRACTION: /^[\s]*(?:-)?[0-9]+\/(?:-)?[0-9]+/,
+    FRACTION: /^[\s]*(?:-)?[0-9]+[\s]*\/[\s]*(?:-)?[0-9]+/,
     NUMBER  : /^[\s]*(?:-)?[0-9]+(?:\.[0-9]+)?/,
     STRING  : /^[\s]*\"(?:.*?)\"/,
     BOOLEAN : /^[\s]*(?:true|false)/,

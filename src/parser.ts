@@ -1,6 +1,6 @@
 import Token, { BuiltIn, getTokenTypeName, Operator, TokenType } from "./token";
 import chalk from "chalk";
-import Fraction from "./fraction";
+import Fraction from "./dataclasses/fraction";
 
 export function getNodeTypeName(n: NodeType) {
     return Object.keys(NodeType).slice(Object.keys(NodeType).length / 2)[n];

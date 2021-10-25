@@ -2,9 +2,9 @@ import chalk from "chalk";
 import prompt from "prompt-sync";
 import { EvaluationError, TypeError } from "./errors";
 import ExpressionEvaluator from "./expressionEvaluator";
-import Fraction from "./fraction";
+import Fraction from "./dataclasses/fraction";
 import { INode, ITopNode, IVardecNode, ISymbolNode, NodeType, IExpressionNode, IValueNode, IOperatorNode, IFunctionCallNode } from "./parser";
-import { BuiltIn } from "./token";
+import { BuiltIn, TokenTypes } from "./token";
 
 export interface IVar {
     name: string,
@@ -22,7 +22,16 @@ export const standardFunctions: any = {
     print: (...v: any[]) => console.log(...v.map(r => r instanceof Fraction ? r.toString() : r)),
     stringify: (...v: any[]) => v.map((y: any) => y.toString()).join(''),
     sqrt: Math.sqrt,
-    input: (v: string) => prompt({ sigint: true } as prompt.Config)(v)
+    input: (v: string) => {
+        const s = prompt({ sigint: true } as prompt.Config)(v)
+        if (s.trim().match(TokenTypes.FRACTION) === null) {
+            if (s.includes('.') && parseFloat(s)) return parseFloat(s);
+            if (parseInt(s)) return parseInt(s);
+            return s;
+        }
+        const p = s.split('/').map(v => parseInt(v));
+        return new Fraction(p[0], p[1]);
+    }
 };
 
 export default class Evaluator {
@@ -154,7 +163,7 @@ export default class Evaluator {
                 } as IExpressionNode;
             } else if (v.type === NodeType.FunctionCall) {
                 const t = this.evaluateFunctionCall(v as IFunctionCallNode);
-                return {type: typeof t === "string" ? NodeType.StringLiteral : (typeof t === "number" ? NodeType.NumberLiteral : NodeType.Symbol), value: t} as IValueNode;
+                return {type: typeof t === "string" ? NodeType.StringLiteral : (typeof t === "number" ? NodeType.NumberLiteral : (typeof t === "boolean" ? NodeType.Boolean : (t instanceof Fraction ? NodeType.Fraction : NodeType.Symbol))), value: t} as IValueNode;
             } else {
                 return v as INode;
             }
@@ -251,7 +260,7 @@ export default class Evaluator {
                 } as IVar);
             } else if (n.varval.type === NodeType.FunctionCall) {
                 const e = this.evaluateFunctionCall(n.varval);
-                if (!this.typeCheck(n.vartype, typeof e)) throw TypeError.vardecTypeCheckError(n);
+                if (!this.typeCheck(n.vartype, e instanceof Fraction ? "fraction" : typeof e)) throw TypeError.vardecTypeCheckError(n);
                 this.variables.push({
                     name: n.varname,
                     type: n.vartype,

@@ -13,9 +13,10 @@ export default class Fraction {
     public set den(val: number) { this.d = val; this.simplifySelf(); }
 
     constructor(num: number, den: number) { this.n = num; this.d = den; }
+    static fromNumber(n: number) { return new Fraction(n, 1); }
 
     public invert() { return new Fraction(this.d, this.n); }
-    public toString() { return `${this.n}/${this.d}`; }
+    public toString() { return this.d === 1 ? this.n : `${this.n}/${this.d}`; }
 
     public simplify() { const g = gcd(this.n, this.d); return new Fraction(this.n/g, this.d/g); }
     public simplifySelf() { this.n = this.simplify().n; this.d = this.simplify().d; }
