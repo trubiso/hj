@@ -1,5 +1,5 @@
 import Evaluator from "./evaluator";
-import Parser, { IVardecNode } from "./parser";
+import Parser from "./parser";
 import Tokenizer from "./tokenizer";
 import fs from "fs"
 

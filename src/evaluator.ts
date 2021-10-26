@@ -19,8 +19,10 @@ export interface IDummy<T> { // this interface sucks
 export type ExprType = (INode | IVar | ExprType)[]
 
 export const standardFunctions: any = {
-    print: (...v: any[]) => console.log(...v.map(r => r instanceof Fraction ? r.toString() : r)),
-    stringify: (...v: any[]) => v.map((y: any) => y.toString()).join(''),
+    print: (...v: any[]) => {
+        console.log(...v.map(r => r instanceof Fraction ? r.toString() : r))
+    },
+    stringify: (...v: any[]) => v.map((y: any) => y.toString()).join(' '),
     sqrt: Math.sqrt,
     input: (v: string) => {
         const s = prompt({ sigint: true } as prompt.Config)(v)
@@ -124,7 +126,7 @@ export default class Evaluator {
             default:
                 return null;
             }
-        }).filter(v => v);
+        }).filter(v => v !== null);
     }
 
     private parseExpression(n : IExpressionNode) : any {
@@ -175,47 +177,6 @@ export default class Evaluator {
         }
 
         return ExpressionEvaluator.evaluateExpressionNode(expr).value;
-        /*// Parse symbols into IVars
-        const p = (v: INode | IVar) : any => { // this name is VERY descriptive. what does this function do? it p
-            if (v.type === NodeType.UnparsedSymbol) {
-                return this.parseSymbol(v as ISymbolNode, false);
-            } else if (v.type === NodeType.Expression) {
-                return (v as IExpressionNode).expr.map(p);
-            } else if (v.type === NodeType.FunctionCall) {
-                const t = this.evaluateFunctionCall(v as IFunctionCallNode);
-                return {type: typeof t === "string" ? NodeType.StringLiteral : (typeof t === "number" ? NodeType.NumberLiteral : NodeType.Symbol), value: t} as IValueNode;
-            } else {
-                return v;
-            }
-        }
-
-        const expr : ExprType[] = n.expr.map(p);
-        console.log(expr);
-
-        // Convert into mathematical expression
-        let exprStr = "";
-        const r = (v: any) : void => { // yet another descriptive name
-            if (v.length) {
-                exprStr += "(";
-                v.forEach(r);
-                exprStr += ")";
-                return; // i like this code
-            }
-            if (v.type !== NodeType.UnparsedOperator) {
-                if (typeof v.type === "string") {
-                    exprStr += `(${(v as IVar).val})`;
-                } else {
-                    if ((v as IValueNode).type === NodeType.StringLiteral) exprStr += `("${(v as IValueNode).value}")`;
-                    else exprStr += `(${(v as IValueNode).value})`;
-                }
-            } else {
-                exprStr += (v as IOperatorNode).operator;
-            }
-        }
-        expr.forEach(r);
-        const o = eval(exprStr);
-        //if (typeof o === 'string') return `"${o}"`;
-        return o;*/
     }
 
     private typeCheck(type: BuiltIn, spsType: string) {

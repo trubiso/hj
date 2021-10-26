@@ -34,4 +34,41 @@ export default class Number implements IDataClass {
             value: number1.value ** number2.value
         } as IValueNode
     }
+
+    public equals(number1: IValueNode, number2: IValueNode): IValueNode {
+        return {
+            type: NodeType.Boolean,
+            value: number1.value === number2.value
+        } as IValueNode;
+    }
+    public equalsNot(number1: IValueNode, number2: IValueNode): IValueNode {
+        return {
+            type: NodeType.Boolean,
+            value: number1.value !== number2.value
+        } as IValueNode;
+    }
+    public greater(number1: IValueNode, number2: IValueNode): IValueNode {
+        return {
+            type: NodeType.Boolean,
+            value: number1.value > number2.value
+        } as IValueNode;
+    }
+    public greaterEqual(number1: IValueNode, number2: IValueNode): IValueNode {
+        return {
+            type: NodeType.Boolean,
+            value: !this.smaller(number1, number2).value
+        } as IValueNode;
+    }
+    public smaller(number1: IValueNode, number2: IValueNode): IValueNode {
+        return {
+            type: NodeType.Boolean,
+            value: number1.value < number2.value
+        } as IValueNode;
+    }
+    public smallerEqual(number1: IValueNode, number2: IValueNode): IValueNode {
+        return {
+            type: NodeType.Boolean,
+            value: !this.greater(number1, number2).value
+        } as IValueNode;
+    }
 }

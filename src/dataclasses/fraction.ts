@@ -67,4 +67,43 @@ export default class Fraction implements IDataClass{
     public pow(frac1: IValueNode, frac2: IValueNode): IValueNode { 
         throw 'Unsupported operator for two fractions: \'**\''
     }
+    public equals(frac1: IValueNode, frac2: IValueNode): IValueNode {
+        const sf: Fraction[] = [frac1, frac2].map(v => v.value.simplify());
+        return {
+            type: NodeType.Boolean,
+            value: sf[0].n === sf[1].n && sf[0].d === sf[1].d
+        } as IValueNode;
+    }
+    public equalsNot(frac1: IValueNode, frac2: IValueNode): IValueNode {
+        return {
+            type: NodeType.Boolean,
+            value: !this.equals(frac1, frac2).value
+        } as IValueNode;
+    }
+    public greater(frac1: IValueNode, frac2: IValueNode): IValueNode {
+        const cd = Fraction.commonDenominator(frac1.value, frac2.value);
+        return {
+            type: NodeType.Boolean,
+            value: cd[0].n > cd[1].n
+        } as IValueNode;
+    }
+    public greaterEqual(frac1: IValueNode, frac2: IValueNode): IValueNode {
+        return {
+            type: NodeType.Boolean,
+            value: !this.smaller(frac1, frac2).value
+        } as IValueNode;
+    }
+    public smaller(frac1: IValueNode, frac2: IValueNode): IValueNode {
+        const cd = Fraction.commonDenominator(frac1.value, frac2.value);
+        return {
+            type: NodeType.Boolean,
+            value: cd[0].n < cd[1].n
+        } as IValueNode;
+    }
+    public smallerEqual(frac1: IValueNode, frac2: IValueNode): IValueNode {
+        return {
+            type: NodeType.Boolean,
+            value: !this.greater(frac1, frac2).value
+        } as IValueNode;
+    }
 }

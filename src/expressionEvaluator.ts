@@ -22,14 +22,53 @@ export default class ExpressionEvaluator {
 
     private static evaluateSimpleOperation(value1: IValueNode, value2: IValueNode, operator: IOperatorNode): IValueNode {
 
-        // TODO: Logical operators (at the top)
-
         // convert booleans to int to perform operations with them
         if (value1.type === NodeType.Boolean) {
             value1 = this.convertBoolNodeToNumberNode(value1);
         }
         if (value2.type === NodeType.Boolean) {
             value2 = this.convertBoolNodeToNumberNode(value2);
+        }
+
+        let dataclass: IDataClass;
+
+        // assign the corresponding dataclass
+        switch (value1.type) {
+        case NodeType.NumberLiteral:
+            dataclass = new Number;
+            break;
+        case NodeType.StringLiteral:
+            dataclass = new String;
+            break;
+        case NodeType.Fraction:
+            dataclass = new Fraction(1, 1); // this isn't very elegant but idk how to make typescript shut up
+            break;
+        default:
+            throw `What the hell are you trying to operate with? (given: ${getNodeTypeName(value1.type)})`
+        }
+
+        // conditional operators
+        if (this.operatorPriorities[3].includes(operator.operator)) {
+            // cross type comparison for equals and notEquals
+            if (value1.type !== value2.type) {
+                if (['==', '!='].includes(operator.operator)) { // objects of a different type will never be the same
+                    return {
+                        type: NodeType.Boolean,
+                        value: false
+                    } as IValueNode
+                }
+                throw `Unsupported conditional operator for two different types: ${operator.operator}`
+            }
+
+            switch (operator.operator) {
+            case '==': return dataclass.equals(value1, value2)
+            case '!=': return dataclass.equalsNot(value1, value2)
+            case '>': return dataclass.greater(value1, value2)
+            case '>=': return dataclass.greaterEqual(value1, value2)
+            case '<': return dataclass.smaller(value1, value2)
+            case '<=': return dataclass.smallerEqual(value1, value2)
+            default: throw `Wth how is this possible`;
+            }
         }
         
         // check if it's an operator supported in expressions
@@ -38,31 +77,14 @@ export default class ExpressionEvaluator {
         // check for similar type
         if (value1.type !== value2.type) throw `Cannot operate on 2 values of unmergable types.`;
 
-        let dataclass: IDataClass;
-
-        // assign the corresponding dataclass
-        switch (value1.type) {
-            case NodeType.NumberLiteral:
-                dataclass = new Number;
-                break;
-            case NodeType.StringLiteral:
-                dataclass = new String;
-                break;
-            case NodeType.Fraction:
-                dataclass = new Fraction(1, 1); // this isn't very elegant but idk how to make typescript shut up
-                break;
-            default:
-                throw `What the hell are you trying to operate with? (given: ${getNodeTypeName(value1.type)})`
-        }
         // and perform the operation with the dataclass (may throw errors that the operator is unsupported for that dataclass)
         switch (operator.operator) {
-            case '+': return dataclass.add(value1, value2)
-            case '-': return dataclass.subtract(value1, value2)
-            case '*': return dataclass.multiply(value1, value2)
-            case '/': return dataclass.divide(value1, value2)
-            case '**': return dataclass.pow(value1, value2)
-        default:
-            throw `Invalid operator: \'${operator.operator}\'.`
+        case '+': return dataclass.add(value1, value2)
+        case '-': return dataclass.subtract(value1, value2)
+        case '*': return dataclass.multiply(value1, value2)
+        case '/': return dataclass.divide(value1, value2)
+        case '**': return dataclass.pow(value1, value2)
+        default: throw `Invalid operator: \'${operator.operator}\'.`
         }
     }
 
@@ -121,12 +143,13 @@ export default class ExpressionEvaluator {
                 expr.expr.splice(nextOperatorIndex, 2); 
             } else {
                 // going down in the priority
-                if (currentPriorityLevel < 2) {
+                if (currentPriorityLevel < this.operatorPriorities.length) {
                     currentPriorityLevel++;
                 }
                 // there is no unevaluated operator left, there should be exactly one Node which is the final result
                 else {
                     if (expr.expr.length !== 1) {
+                        console.log(expr.expr);
                         throw 'There wasn\'t a single result while evaluating expression.'; // TODO: better error
                     }
                     // there could be the case that there is no operator, but a sub-expression-node left => recursion to handle it
