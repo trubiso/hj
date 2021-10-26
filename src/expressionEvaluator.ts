@@ -1,3 +1,7 @@
+import IDataClass from "./dataclasses/dataClass";
+import Fraction from "./dataclasses/fraction";
+import Number from "./dataclasses/number";
+import String from "./dataclasses/string";
 import { getNodeTypeName, IExpressionNode, IOperatorNode, IValueNode, NodeType } from "./parser";
 import { Operator } from "./token";
 
@@ -19,7 +23,6 @@ export default class ExpressionEvaluator {
     private static evaluateSimpleOperation(value1: IValueNode, value2: IValueNode, operator: IOperatorNode): IValueNode {
 
         // TODO: Logical operators (at the top)
-        // TODO: seperate this function into other files in a sub-folder because it's gonna get more messy
 
         // convert booleans to int to perform operations with them
         if (value1.type === NodeType.Boolean) {
@@ -33,74 +36,34 @@ export default class ExpressionEvaluator {
         if (!['**', '*', '/', '+', '-'].includes(operator.operator)) throw `Cannot use assignment operators for expressions.`
 
         // check for similar type
-        if (value1.type !== value2.type) throw `Cannot operate on 2 values of different types.`;
+        if (value1.type !== value2.type) throw `Cannot operate on 2 values of unmergable types.`;
 
-        // int operations
-        if (value1.type === NodeType.NumberLiteral) {
-            switch (operator.operator) {
-            case '+':
-                return {
-                    type: value1.type,
-                    value: value1.value + value2.value
-                } as IValueNode;
-            case '-':
-                return {
-                    type: value1.type,
-                    value: value1.value - value2.value
-                } as IValueNode;
-            case '*':
-                return {
-                    type: value1.type,
-                    value: value1.value * value2.value
-                } as IValueNode;
-            case '/':
-                return {
-                    type: value1.type,
-                    value: value1.value / value2.value
-                } as IValueNode;
-            case '**':
-                return {
-                    type: value1.type,
-                    value: value1.value ** value2.value
-                } as IValueNode;
-            }
-        } else if (value1.type === NodeType.StringLiteral) {
-            switch (operator.operator) {
-            case '+':
-                return {
-                    type: value1.type,
-                    value: value1.value + value2.value
-                } as IValueNode;
+        let dataclass: IDataClass;
+
+        // assign the corresponding dataclass
+        switch (value1.type) {
+            case NodeType.NumberLiteral:
+                dataclass = new Number;
+                break;
+            case NodeType.StringLiteral:
+                dataclass = new String;
+                break;
+            case NodeType.Fraction:
+                dataclass = new Fraction(1, 1); // this isn't very elegant but idk how to make typescript shut up
+                break;
             default:
-                throw `Unsupported operator for string: ${operator.operator}`;
-            }
-        } else if (value1.type === NodeType.Fraction) {
-            switch (operator.operator) {
-            case '+':
-                return {
-                    type: value1.type,
-                    value: value1.value.add(value2.value)
-                } as IValueNode;
-            case '-':
-                return {
-                    type: value1.type,
-                    value: value1.value.subtract(value2.value)
-                } as IValueNode;
-            case '*':
-                return {
-                    type: value1.type,
-                    value: value1.value.multiply(value2.value)
-                } as IValueNode;
-            case '/':
-                return {
-                    type: value1.type,
-                    value: value1.value.divide(value2.value)
-                } as IValueNode;
-            default:
-                throw `Unsupported operator for frac: ${operator.operator}`;
-            }
+                throw `What the hell are you trying to operate with? (given: ${getNodeTypeName(value1.type)})`
         }
-        throw 'What the hell are you trying to operate with???'; 
+        // and perform the operation with the dataclass (may throw errors that the operator is unsupported for that dataclass)
+        switch (operator.operator) {
+            case '+': return dataclass.add(value1, value2)
+            case '-': return dataclass.subtract(value1, value2)
+            case '*': return dataclass.multiply(value1, value2)
+            case '/': return dataclass.divide(value1, value2)
+            case '**': return dataclass.pow(value1, value2)
+        default:
+            throw `Invalid operator: \'${operator.operator}\'.`
+        }
     }
 
     // this function takes a list of the operators to search for and the expression node where it will search, and finds the first operator in that expression node that is included in the given operator list

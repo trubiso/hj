@@ -1,4 +1,4 @@
-import { getNodeTypeName, IValueNode, NodeType } from "../parser";
+import { IValueNode, NodeType } from "../parser";
 import IDataClass from "./dataClass";
 
 export default class Number implements IDataClass {
