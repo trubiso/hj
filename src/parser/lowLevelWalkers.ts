@@ -60,13 +60,15 @@ export const parseControlStructure : Walker = (parser: Parser): INode => {
     switch(parser.currentToken.value) {
     case 'if':
         node = { type: NodeType.IfStmt } as IIfStmtNode; // declare an if statement node
-        parser.current++; // advance (skip the if keyword)
 
-        node.condition = parser.walk() as IExpressionNode; // TODO: this shouldnt be like this, or it should, decide later
-        node.code = parser.walk() as ICodeBlockNode; // TODO: this shouldnt be like this, or it should, decide later
-        next = parser.walk(); // TODO: this shouldnt be like this, or it should, decide later
+        parser.current += 2; // skip if & starting parenthesis
+        node.condition = parseExpression(parser, ')');
+        parser.current ++;
+
+        node.code = parser.walk() as ICodeBlockNode;
+        next = parser.walk();
         
-        const originalCurrent = parser.current;
+        const originalCurrent = parser.current; 
         if (next.type === NodeType.ElseStmt) {
             node.else = (next as IElseStmtNode);
         } else {
@@ -97,8 +99,9 @@ export const parseControlStructure : Walker = (parser: Parser): INode => {
         node = {
             type: NodeType.WhileStmt
         } as IWhileStmtNode;
-        parser.current++;
-        node.condition = parser.walk() as IExpressionNode;
+        parser.current += 2; // skip while & starting parenthesis
+        node.condition = parseExpression(parser, ')');
+        parser.current ++;
         node.code = parser.walk() as ICodeBlockNode;
         return node;
     default:
@@ -110,14 +113,14 @@ export const parseVariableAssignment : Walker = (parser: Parser): INode => {
     const varName = parser.currentToken;
     const asgnSymbol = parser.next();
     parser.current += 2;
-    const varValue = parser.walk(); // TODO: use the expression walker
+    const varValue = parseExpression(parser, ';');
     
-    if (!(varName.type === TokenType.SYMBOL && asgnSymbol.type === TokenType.SPECIAL && asgnSymbol.value === '=')) {
+    if (!(varName.type === TokenType.SYMBOL && asgnSymbol.type === TokenType.OPERATOR && asgnSymbol.value === '=')) {
         throw `Invalid syntax for variable assignment (perhaps you did +=, dw, it'll be added later)`;
     }
 
     const varAsgn = {
-        type: NodeType.VariableDeclaration,
+        type: NodeType.VariableAssignment,
         varname: varName.value,
         varval: varValue
     } as IVarAssignNode;
