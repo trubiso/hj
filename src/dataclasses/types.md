@@ -34,9 +34,41 @@ This type contains a fraction - a ratio between 2 integers (not to be confused w
 ### array (Array)
 This type contains a collection of untyped values, meaning that they contain a set of values that can have any type. For example, `[3/4, 5, false, "hi"]` would be a perfectly reasonable array. They require dot access for simple operations such as pushing values into the array.
 
+#### Array functions:
+| Method | Description |
+| --- | --- |
+`.filter(filterFunction)` | Filters every element in the array through a provided function.*
+`.find(findFunction)` | Finds & returns an element using the provided find function.*
+`.find(findFunction)` | Finds an element using the provided find function and returns its index.*
+`.has(item)` | Returns whether the array has a specified item or not.
+`.join(separator)` | Joins every item of the array, separating them with the provided separator (which may be an empty string).
+`.indexOf(item)` | Returns the index of the first occurrence of the item in the array.*
+`.indexesOf(item)` | Returns the indexes of all occurrences of the item in the array.*
+`.map(mapFunction)` | Passes every element of the array through a function and returns them.*
+`.pop()` | Removes & returns the last element of the array.
+`.last()` | Returns the last element of the array.
+`.push(item)` | Adds an item to the end of an array and returns its index.
+`.reduce(reduceFunction, reverse)` | Returns all of the elements of the array reduced using a function. If `reverse` is true, the elements get reduced using the reversed array.*
+`.reverse()` | Reverses the array.
+`.shift()` | Removes & returns the first element of the array.
+`.first()` | Returns the first element of the array.
+`.slice(start, end, step)` | Returns a slice of the array.* (pythonic arrays might replace this)
+`.all(conditionFunction)` | Returns whether all elements follow a condition described in a function.*
+`.one(conditionFunction)` | Returns whether at least one element follows a condition described in a function.*
+`.sort(sortFunction)` | Sorts and returns the array using a function.*
+`.toString()` | Returns the stringified array.* (`stringify(array)` would also work)
+`.unshift(item)` | Adds an item at the beginning of the array and returns the index.
+`.insert(item, index)` | Inserts an item at an index.
+`.delete(index, amount)` | Deletes an element at an index (if amount is specified, it deletes the amount of elements from that index)
+`.pick()` | Returns a random element from the array.
+`.shuffle()` | Returns the shuffled version of the array.
+`.unique()` | Removes & returns duplicate elements from the array.
+`.h()` | h
+`.j()` | j
+\* The function concept is still in the works, perhaps it will removed, renamed or replaced.
 
 ## Special types
-This is a subject we haven't fully thought about yet. We have some prototypes but nothing is definitive
+This is a subject we haven't fully thought about yet. We have some prototypes but nothing is definitive.
 
 ### function (Function)
 _not now :)_ (the current syntax is `function name = (num a, frac b, bool c) => string { /* code here */ };`, subject to changes)
