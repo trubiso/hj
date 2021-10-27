@@ -1,4 +1,4 @@
-import { IValueNode } from "../parser";
+import { IValueNode } from "../parser/nodes";
 
 export default interface IDataClass {
     add(value1: IValueNode, value2: IValueNode): IValueNode;

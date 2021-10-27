@@ -2,7 +2,7 @@ import IDataClass from "./dataclasses/dataClass";
 import Fraction from "./dataclasses/fraction";
 import Number from "./dataclasses/number";
 import String from "./dataclasses/string";
-import { getNodeTypeName, IExpressionNode, IOperatorNode, IValueNode, NodeType } from "./parser";
+import { getNodeTypeName, IExpressionNode, IOperatorNode, IValueNode, NodeType } from "./parser/nodes";
 import { Operator } from "./token";
 
 export default class ExpressionEvaluator {
@@ -94,7 +94,7 @@ export default class ExpressionEvaluator {
         // go through all sub-nodes
         for (const subNode of expr.expr) {
             // check for matching operator
-            if (subNode.type === NodeType.UnparsedOperator && operatorList.includes((subNode as IOperatorNode).operator)) {
+            if (subNode.type === NodeType.Operator && operatorList.includes((subNode as IOperatorNode).operator)) {
                 return nodeIndex
             }
             nodeIndex++;
@@ -143,7 +143,7 @@ export default class ExpressionEvaluator {
                 expr.expr.splice(nextOperatorIndex, 2); 
             } else {
                 // going down in the priority
-                if (currentPriorityLevel < this.operatorPriorities.length) {
+                if (currentPriorityLevel < this.operatorPriorities.length - 1) {
                     currentPriorityLevel++;
                 }
                 // there is no unevaluated operator left, there should be exactly one Node which is the final result

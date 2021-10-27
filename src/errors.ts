@@ -1,6 +1,7 @@
 import chalk from "chalk";
 import { IVar } from "./evaluator";
-import { getNodeTypeName, IFunctionCallNode, INode, ISymbolNode, IVardecNode, NodeType } from "./parser";
+import { ISymbolNode, IFunctionCallNode, IVardecNode, INode, getNodeTypeName } from "./parser/nodes";
+import Token, { getTokenTypeName } from "./token";
 
 export class TokenError extends Error {
     public name = "";
@@ -15,6 +16,18 @@ export class SyntaxError extends Error {
 
     constructor(message: string) {
         super(chalk.red("[SyntaxError] ") + message);
+    }
+}
+
+export class ParseError extends Error {
+    public name = "";
+
+    constructor(message: string) {
+        super(chalk.red("[ParseError] ") + message);
+    }
+
+    static invalidToken(context: string, token: Token) {
+        return new ParseError(`Invalid token type for context \'${context}\': ${getTokenTypeName(token.type)}`)
     }
 }
 

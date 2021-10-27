@@ -1,5 +1,5 @@
 import Evaluator from "./evaluator";
-import Parser from "./parser";
+import Parser from "./parser/parser";
 import Tokenizer from "./tokenizer";
 import fs from "fs"
 
@@ -10,5 +10,5 @@ const tokens = tokenizer.createTokens();
 const parser = new Parser(tokens);
 const ast = parser.parse();
 const evaluator : Evaluator = new Evaluator(ast);
-// evaluator.prettyPrint();
+evaluator.prettyPrint();
 evaluator.evaluate();

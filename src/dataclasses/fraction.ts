@@ -1,4 +1,4 @@
-import { IValueNode, NodeType } from "../parser";
+import { IValueNode, NodeType } from "../parser/nodes";
 import IDataClass from "./dataClass";
 
 export const gcd = (a: number, b: number): number => a?gcd(b%a,a):b;

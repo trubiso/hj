@@ -1,8 +1,21 @@
-// num a = input("give me 1 number ");
-// num b = input("give me ANOTHER ONE !!! ");
-string c = "avocadó";
-string d = "avocado";
-bool isGreater = c > d;
+num f = input("number of fibonacci numbers? ");
+num prev1 = 0;
+num prev2 = 1;
+num curr = 1;
+num i = f;
+/*while (i > 0) {
+    i = i - 1;
+    curr = prev1 + prev2;
+    prev1 = curr;
+    prev2 = prev1;
+    print(curr, i);
+}*/
+num i = 3;
+print(i);
+num i = i - 1;
+print(i);
+num i = i - 1;
+print(i);
 /*
 what an if statement should look like:
 if (isGreater) {
