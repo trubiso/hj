@@ -115,7 +115,6 @@ export default class Evaluator {
         return n.map(v => {
             switch(v.type) {
             case NodeType.Symbol:
-            case NodeType.Symbol:
                 return this.parseSymbol(v as ISymbolNode).val;
             case NodeType.StringLiteral:
             case NodeType.NumberLiteral:
@@ -129,6 +128,8 @@ export default class Evaluator {
                 return (v as IOperatorNode).operator;
             case NodeType.FunctionCall:
                 return this.evaluateFunctionCall(v as IFunctionCallNode); // WARNING: this could cause recursiveness
+            case NodeType.Array:
+                return this.nodesToLiterals((v as IValueNode).value); // WARNING: this could cause recursiveness
             default:
                 return null;
             }
@@ -159,6 +160,11 @@ export default class Evaluator {
                     return {
                         type: NodeType.Fraction,
                         value: r.val
+                    } as IValueNode;
+                case 'array':
+                    return {
+                        type: NodeType.Array,
+                        value: r.val.map((v: IExpressionNode) => this.evaluateExpression(v))
                     } as IValueNode;
                 default:
                     throw "what"; // I feel that

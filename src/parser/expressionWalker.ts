@@ -2,7 +2,7 @@ import { ParseError } from "../errors";
 import Token, { TokenType } from "../token";
 import { parseFunctionCall, parseVariableAssignment, parseValue, parseOperator, parseSymbol } from "./lowLevelWalkers";
 import { INode, NodeType } from "./nodes";
-import { parseExpression } from "./parseFunctions";
+import { parseArray, parseExpression } from "./parseFunctions";
 import Parser from "./parser";
 import { Walker } from "./walker";
 
@@ -36,14 +36,16 @@ export const expressionWalker : Walker = (parser: Parser): INode => {
             return parseSymbol(parser); 
         }
     
-    // for now, only sub-expressions
+    // sub-expressions and arrays
     case TokenType.SPECIAL:
         // if there's a ( expression
         if (token.value === '(') {
             parser.current++; // skip it
             const expr = parseExpression(parser, ')');
-            parser.current++;
+            parser.current++; // skip closing parenthesis
             return expr;
+        } else if (token.value === '[') {
+            return parseArray(parser);
         } else { // if it's not then some unimplemented / incorrect syntax was used
             throw `i did not expect you to give me a ${token.value}; yet you DID. disrespectful... smh`
         }

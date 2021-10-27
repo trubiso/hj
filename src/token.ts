@@ -3,16 +3,16 @@ export const TokenTypes = {
     NUMBER  : /^[\s]*(?:-)?[0-9]+(?:\.[0-9]+)?/,
     STRING  : /^[\s]*\"(?:.*?)\"/,
     BOOLEAN : /^[\s]*(?:true|false)/,
-    BUILTIN : /^[\s]*(?:frac|num|void|string|frac|bool)\s/,
+    BUILTIN : /^[\s]*(?:frac|num|void|string|frac|bool|array)\s/,
     USRTYPES: /^[\s]*(?:class|function)\s/,
     KEYWORD : /^[\s]*(if|else|elif|while|for|return)\s/,
     SYMBOL  : /^[\s]*[A-Za-z_][\w]*/,
     OPERATOR: /^[\s]*(?:(?:==|<=|<|>=|>|!=)|(?:[+\-\/*]?=)|(?:[+\-\*]{2})|(?:[+\-\/*\=]))/,
-    SPECIAL : /^[\s]*(?:[\{\}\(\);:]|=>)/,
+    SPECIAL : /^[\s]*(?:[\{\}\(\)\[\];]|=>)/,
     OTHER   : /^[\s]*(?:\,)/
 };
 
-export type BuiltIn  = 'frac' | 'num' | 'void' | 'string' | 'frac' | 'bool';
+export type BuiltIn  = 'frac' | 'num' | 'void' | 'string' | 'frac' | 'bool' | 'array';
 export type UsrTypes  = 'class' | 'function';
 export type Keyword  = 'if' | 'else' | 'elif' | 'while' | 'for' | 'return';
 export type Operator = '+' | '-' | '*' | '/' | '**' | '+=' | '-=' | '*=' | '/=' | '++' | '--' | '==' | '<' | '<=' | '>' | '>=' | '!=';

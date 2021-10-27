@@ -5,7 +5,7 @@ export function getNodeTypeName(n: NodeType) {
 }
 
 export enum NodeType {
-    Program, NumberLiteral, StringLiteral, Boolean, Fraction, Symbol, VariableDeclaration, VariableAssignment, Expression, FunctionCall, FunctionArguments, Operator, CodeBlock, IfStmt, ElseStmt, WhileStmt, Comma, NullNode
+    Program, NumberLiteral, Array, StringLiteral, Boolean, Fraction, Symbol, VariableDeclaration, VariableAssignment, Expression, FunctionCall, FunctionArguments, Operator, CodeBlock, IfStmt, ElseStmt, WhileStmt, Comma, NullNode
 }
 
 export interface INode {

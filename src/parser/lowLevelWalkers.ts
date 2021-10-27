@@ -37,7 +37,7 @@ export const parseVariableDeclaration : Walker = (parser: Parser): INode => {
     // initialize the variable declaration node
     const vardec = {
         type: NodeType.VariableDeclaration,
-        vartype: token.value as BuiltIn,
+        vartype: token.value,
         varname: nameTok.value
     } as IVardecNode;
 
