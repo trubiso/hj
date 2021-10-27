@@ -5,7 +5,7 @@ export const TokenTypes = {
     BOOLEAN : /^[\s]*(?:true|false)/,
     BUILTIN : /^[\s]*(?:frac|num|void|string|frac|bool)\s/,
     USRTYPES: /^[\s]*(?:class|function)\s/,
-    KEYWORD : /^[\s]*(if|else|while|for|return)\s/,
+    KEYWORD : /^[\s]*(if|else|elif|while|for|return)\s/,
     SYMBOL  : /^[\s]*[A-Za-z_][\w]*/,
     OPERATOR: /^[\s]*(?:(?:==|<=|<|>=|>|!=)|(?:[+\-\/*]?=)|(?:[+\-\*]{2})|(?:[+\-\/*\=]))/,
     SPECIAL : /^[\s]*(?:[\{\}\(\);:]|=>)/,
@@ -14,7 +14,7 @@ export const TokenTypes = {
 
 export type BuiltIn  = 'frac' | 'num' | 'void' | 'string' | 'frac' | 'bool';
 export type UsrTypes  = 'class' | 'function';
-export type Keyword  = 'if' | 'else' | 'while' | 'for' | 'return';
+export type Keyword  = 'if' | 'else' | 'elif' | 'while' | 'for' | 'return';
 export type Operator = '+' | '-' | '*' | '/' | '**' | '+=' | '-=' | '*=' | '/=' | '++' | '--' | '==' | '<' | '<=' | '>' | '>=' | '!=';
 
 export function getTokenTypeName(i: number) { return Object.values(TokenType)[i]; }

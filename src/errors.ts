@@ -42,8 +42,8 @@ export class TypeError extends Error {
         return new TypeError(chalk.redBright(x) + (v ? chalk.grey(` (current symbols: ${v.map(b => b.name).join(', ')})`) : ""))
     }
 
-    static symbolNotFound(s: ISymbolNode, v: IVar[]) {
-        return this.xNotFound(`symbol ${s.name} not found`, v);
+    static symbolNotFound(n: string, v: IVar[]) {
+        return this.xNotFound(`symbol ${n} not found`, v);
     }
 
     static functionNotFound(f: IFunctionCallNode) {

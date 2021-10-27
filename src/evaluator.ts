@@ -4,7 +4,7 @@ import { EvaluationError, TypeError } from "./errors";
 import ExpressionEvaluator from "./expressionEvaluator";
 import Fraction from "./dataclasses/fraction";
 import { BuiltIn, TokenTypes } from "./token";
-import { INode, ITopNode, NodeType, IVardecNode, IExpressionNode, IFunctionCallNode, IValueNode, ISymbolNode, IOperatorNode, IIfStmtNode, ICodeBlockNode, IWhileStmtNode } from "./parser/nodes";
+import { INode, ITopNode, NodeType, IVardecNode, IExpressionNode, IFunctionCallNode, IValueNode, ISymbolNode, IOperatorNode, IIfStmtNode, ICodeBlockNode, IWhileStmtNode, IVarAssignNode } from "./parser/nodes";
 
 export interface IVar {
     name: string,
@@ -101,7 +101,7 @@ export default class Evaluator {
     private parseSymbol(s: ISymbolNode) : IVar {
         const r = this.variables.find(y => y.name === s.name);
         if (!r) {
-            throw TypeError.symbolNotFound(s, this.variables);
+            throw TypeError.symbolNotFound(s.name, this.variables);
         }
         const t = {
             name: r.name,
@@ -230,6 +230,12 @@ export default class Evaluator {
         }  
     }
 
+    private evaluateVariableAssignment(n: IVarAssignNode) {
+        let correspondingVar = this.variables.find(v => v.name === n.varname);
+        if (!correspondingVar) throw TypeError.symbolNotFound(n.varname, this.variables);
+        correspondingVar.val = this.evaluateExpression(n.varval);
+    }
+
     private evaluateFunctionCall(n: IFunctionCallNode) {
         if (standardFunctions[n.name]) {
             return standardFunctions[n.name](...this.nodesToLiterals(n.args.args));
@@ -258,6 +264,9 @@ export default class Evaluator {
         switch(node.type) {
         case NodeType.VariableDeclaration:
             this.evaluateVariableDeclaration(node as IVardecNode);
+            break;
+        case NodeType.VariableAssignment:
+            this.evaluateVariableAssignment(node as IVarAssignNode);
             break;
         case NodeType.FunctionCall:
             this.evaluateFunctionCall(node as IFunctionCallNode);

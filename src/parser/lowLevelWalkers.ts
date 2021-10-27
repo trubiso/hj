@@ -1,5 +1,5 @@
 import Parser from './parser'
-import Token, { TokenType, getTokenTypeName, BuiltIn } from '../token'
+import Token, { TokenType, getTokenTypeName, BuiltIn, Keyword } from '../token'
 import { ParseError } from '../errors'
 import { Walker } from './walker';
 import { parseExpression } from './parseFunctions';
@@ -56,8 +56,8 @@ export const parseVariableDeclaration : Walker = (parser: Parser): INode => {
 }
 
 export const parseControlStructure : Walker = (parser: Parser): INode => {
-    let node, next;
-    switch(parser.currentToken.value) {
+    let node, next, originalCurrent;
+    switch(parser.currentToken.value as Keyword) {
     case 'if':
         node = { type: NodeType.IfStmt } as IIfStmtNode; // declare an if statement node
 
@@ -68,12 +68,41 @@ export const parseControlStructure : Walker = (parser: Parser): INode => {
         node.code = parser.walk() as ICodeBlockNode;
         next = parser.walk();
         
-        const originalCurrent = parser.current; 
+        originalCurrent = parser.current; 
         if (next.type === NodeType.ElseStmt) {
             node.else = (next as IElseStmtNode);
         } else {
             parser.current = originalCurrent;
         }
+        return node;
+    case 'elif':
+        node = {
+            type: NodeType.ElseStmt
+        } as IElseStmtNode;
+
+        const ifstmt = {
+            type: NodeType.IfStmt
+        } as IIfStmtNode;
+
+        parser.current += 2; // skip elif & starting parenthesis
+        ifstmt.condition = parseExpression(parser, ')');
+        parser.current ++;
+        ifstmt.code = parser.walk() as ICodeBlockNode;
+
+        next = parser.walk();
+        
+        originalCurrent = parser.current; 
+        if (next.type === NodeType.ElseStmt) {
+            ifstmt.else = (next as IElseStmtNode);
+        } else {
+            parser.current = originalCurrent;
+        }
+
+        node.code = {
+            type: NodeType.CodeBlock,
+            nodes: [ifstmt]
+        } as ICodeBlockNode;
+
         return node;
     case 'else':
         node = {

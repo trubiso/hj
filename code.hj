@@ -3,24 +3,17 @@ num prev1 = 0;
 num prev2 = 1;
 num curr = 1;
 num i = f;
-/*while (i > 0) {
+while (i > (1 - 1)) {
     i = i - 1;
     curr = prev1 + prev2;
-    prev1 = curr;
     prev2 = prev1;
-    print(curr, i);
-}*/
-num i = 3;
-print(i);
-num i = i - 1;
-print(i);
-num i = i - 1;
-print(i);
-/*
-what an if statement should look like:
-if (isGreater) {
-    print("omg");
-} else {
-    print("don't be sad... at least it works a bit");
+    prev1 = curr;
+    print(curr);
 }
-*/
+if (f == 1) {
+    print("nice");
+} elif (f == 2) {
+    print("nicé");
+} else {
+    print("bad");
+}
