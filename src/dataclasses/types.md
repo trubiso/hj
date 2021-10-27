@@ -65,6 +65,8 @@ This type contains a collection of untyped values, meaning that they contain a s
 `.unique()` | Removes & returns duplicate elements from the array.
 `.h()` | h
 `.j()` | j
+
+
 \* The function concept is still in the works, perhaps it will removed, renamed or replaced.
 
 ## Special types
