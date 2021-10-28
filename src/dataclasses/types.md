@@ -37,34 +37,34 @@ This type contains a collection of untyped values, meaning that they contain a s
 #### Array functions:
 | Method | Description |
 | --- | --- |
-`.filter(filterFunction)` | Filters every element in the array through a provided function.*
-`.find(findFunction)` | Finds & returns an element using the provided find function.*
-`.findIdx(findFunction)` | Finds an element using the provided find function and returns its index.*
-`.has(item)` | Returns whether the array has a specified item or not.
-`.join(separator)` | Joins every item of the array, separating them with the provided separator (which may be an empty string).
-`.indexOf(item)` | Returns the index of the first occurrence of the item in the array.*
-`.indexesOf(item)` | Returns the indexes of all occurrences of the item in the array.*
-`.map(mapFunction)` | Passes every element of the array through a function and returns them.*
-`.pop()` | Removes & returns the last element of the array.
-`.last()` | Returns the last element of the array.
-`.push(item)` | Adds an item to the end of an array and returns the new array length.
-`.reduce(reduceFunction, reverse)` | Returns all of the elements of the array reduced using a function. If `reverse` is true, the elements get reduced using the reversed array.*
-`.reverse()` | Reverses & returns the array.
-`.shift()` | Removes & returns the first element of the array.
-`.first()` | Returns the first element of the array.
+`.has(item)` | Returns whether the array has a specified item or not. **Implemented**
+`.join(separator?)` | Joins every item of the array, separating them with the provided separator (which may be an empty string). **Implemented**
+`.prepend(item)` | Adds an item at the beginning of the array and returns the new array length. **Implemented**
+`.append(item)` | Adds an item to the end of an array and returns the new array length. **Implemented**
+`.pop(n?)` | Removes & returns the last n elements of the array. n defaults to 1. **Implemented**
+`.shift(n?)` | Removes & returns the first n elements of the array. n defaults to 1. **Implemented**
+`.first(n?)` | Returns the first n elements of the array. n defaults to 1. **Implemented**
+`.last(n?)` | Returns the last n elements of the array. n defaults to 1. **Implemented**
+`.reverse()` | Reverses & returns the array. **Implemented**
+`.insert(item, index)` | Inserts an item at an index and returns the new array length. **Implemented**
+`.delete(index, amount)` | Deletes an element at an index (if amount is specified, it deletes the amount of elements from that index). **Implemented**
+`.pick()` | Returns a random element from the array. **Implemented**
+`.shuffle()` | Returns the shuffled version of the array. **Implemented**
+`.unique()` | Removes & returns duplicate elements from the array. **Implemented**
+`.fill(item, length?)` | Fills & returns the array with a specified item. If `length` is specified, the array's length will be replaced with it before filling. **Implemented**
+`.h()` | h **Implemented**
+`.j()` | j **Implemented**
+`.filter(filterFunction)` | Filters every element in the array through a provided function.* (functions aren't yet implemented)
+`.find(findFunction)` | Finds & returns an element using the provided find function.* (functions aren't yet implemented)
+`.findIdx(findFunction)` | Finds an element using the provided find function and returns its index.* (functions aren't yet implemented)
+`.idxOf(item, multiple?)` | Returns the index of the first occurrence of the item in the array. If the multiple parameter is passed in as `true`, it returns an array with the indexes of all occurrences.* (not sure about it)
+`.map(mapFunction)` | Passes every element of the array through a function and returns them.* (functions aren't yet implemented)
 `.slice(start, end, step)` | Returns a slice of the array.* (pythonic arrays might replace this)
-`.all(conditionFunction)` | Returns whether all elements follow a condition described in a function.*
-`.one(conditionFunction)` | Returns whether at least one element follows a condition described in a function.*
-`.sort(sortFunction)` | Sorts and returns the array using a function.*
+`.all(conditionFunction)` | Returns whether all elements follow a condition described in a function.* (functions aren't yet implemented)
+`.one(conditionFunction)` | Returns whether at least one element follows a condition described in a function.* (functions aren't yet implemented)
+`.sort(sortFunction)` | Sorts and returns the array using a function.* (functions aren't yet implemented)
 `.toString()` | Returns the stringified array.* (`stringify(array)` would also work)
-`.unshift(item)` | Adds an item at the beginning of the array and returns the new array length.
-`.insert(item, index)` | Inserts an item at an index.
-`.delete(index, amount)` | Deletes an element at an index (if amount is specified, it deletes the amount of elements from that index)
-`.pick()` | Returns a random element from the array.
-`.shuffle()` | Returns the shuffled version of the array.
-`.unique()` | Removes & returns duplicate elements from the array.
-`.h()` | h
-`.j()` | j
+`.reduce(reduceFunction, reverse)` | Returns all of the elements of the array reduced using a function. If `reverse` is true, the elements get reduced using the reversed array.* (functions aren't yet implemented)
 
 
 \* The function concept is still in the works, perhaps it will removed, renamed or replaced.

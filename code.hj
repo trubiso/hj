@@ -1,12 +1,23 @@
-array myArray = [3, 2*3, 234**1];
-myArray.push(4, 5);
-print(myArray.has(3), myArray.has(4), myArray.has(6));
-num popped = 0;
+array exp = [2,3];
+array myArray = [3, 2*3, 234**exp.pick()];
+array test = [1, 1, 1, 1];
+print(test.fill(3, 7), test.h());
+myArray.append(4, 5);
+myArray.prepend(10, 6);
+myArray.insert(3, 2);
+myArray.unique();
+myArray.reverse();
+myArray.shuffle();
+myArray.delete(2, 2);
+array popped = [];
 while (myArray.length) {
-    popped = myArray.pop();
-    if (myArray.length == 0) {
-        print("All elements are gone! :(");
+    popped = myArray.shift(2);
+    if (myArray.length) {
+        print(stringify(popped) + " were popped away, "
+        + myArray.join(", ") + " remain. (the best one is "
+        + stringify(myArray.pick()) + " ngl)");
     } else {
-        print(stringify(popped) + " was popped, " + myArray.join(", ") + " remain.");
+        print(stringify(popped) + " were popped away & none remain.");
     }
 }
+print("All elements are gone! :(");

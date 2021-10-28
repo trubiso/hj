@@ -1,10 +1,10 @@
 import chalk from "chalk";
-import prompt from "prompt-sync";
 import { EvaluationError, TypeError } from "./errors";
 import ExpressionEvaluator from "./expressionEvaluator";
 import Fraction from "./dataclasses/fraction";
-import { BuiltIn, TokenTypes } from "./token";
+import { BuiltIn } from "./token";
 import { INode, ITopNode, NodeType, IVardecNode, IExpressionNode, IFunctionCallNode, IValueNode, ISymbolNode, IOperatorNode, IIfStmtNode, ICodeBlockNode, IWhileStmtNode, IVarAssignNode, IDotAccessNode, IUnevaluatedArrayNode } from "./parser/nodes";
+import { dotFunctions, dotProps, standardFunctions } from "./languageFunctions";
 
 export interface IVar {
     name: string,
@@ -17,97 +17,6 @@ export interface IDummy<T> { // this interface sucks
 };
 
 export type ExprType = (INode | IVar | ExprType)[]
-
-export const standardFunctions: any = {
-    print: (...v: any[]) => {
-        console.log(...v.map(r => r instanceof Fraction ? r.toString() : r))
-    },
-    stringify: (...v: any[]) => v.map((y: any) => y.toString()).join(' '),
-    sqrt: Math.sqrt,
-    input: (v: string) => {
-        const s = prompt({ sigint: true } as prompt.Config)(v)
-        if (s.trim().match(TokenTypes.FRACTION) === null) {
-            if (s.includes('.') && parseFloat(s)) return parseFloat(s);
-            if (parseInt(s)) return parseInt(s);
-            return s;
-        }
-        const p = s.split('/').map(v => parseInt(v));
-        return new Fraction(p[0], p[1]);
-    }
-};
-
-type DotFunction = (e: Evaluator, s: ISymbolNode, ...i: any[]) => IValueNode;
-type DotProp = (e: Evaluator, s: ISymbolNode, ...i: any[]) => IValueNode;
-
-export const dotProps: any = {
-    array: {
-        length: ((e: Evaluator, s: ISymbolNode): IValueNode => {
-            return {
-                type: NodeType.NumberLiteral,
-                value: e.variables.find(v => v.name === s.name)?.val.length
-            };
-        }) as DotProp
-    }
-}
-
-export const dotFunctions: any = {
-    array: {
-        has: ((e: Evaluator, s: ISymbolNode, ...i: any[]): IValueNode => {
-            return {
-                type: NodeType.Boolean,
-                value: e.variables.find(v => v.name === s.name)?.val.includes(i[0])
-            };
-        }) as DotFunction,
-        join: ((e: Evaluator, s: ISymbolNode, ...i: any[]): IValueNode => {
-            return {
-                type: NodeType.StringLiteral,
-                value: e.variables.find(v => v.name === s.name)?.val.join(i[0])
-            };
-        }) as DotFunction,
-        pop: ((e: Evaluator, s: ISymbolNode, ...i: any[]): IValueNode => {
-            const v = e.variables.find(v => v.name === s.name)?.val.pop()
-            return {
-                type: Evaluator.getType(v),
-                value: v
-            };
-        }) as DotFunction,
-        last: ((e: Evaluator, s: ISymbolNode, ...i: any[]): IValueNode => {
-            const arr: any[] = e.variables.find(v => v.name === s.name)?.val;
-            const v = arr[arr.length - 1];
-            return {
-                type: Evaluator.getType(v),
-                value: v
-            };
-        }) as DotFunction,
-        push: ((e: Evaluator, s: ISymbolNode, ...i: any[]): IValueNode => {
-            return {
-                type: NodeType.NumberLiteral,
-                value: e.variables.find(v => v.name === s.name)?.val.push(...i)
-            };
-        }) as DotFunction,
-        reverse: ((e: Evaluator, s: ISymbolNode, ...i: any[]): IValueNode => {
-            return {
-                type: NodeType.Array,
-                value: e.variables.find(v => v.name === s.name)?.val.reverse()
-            };
-        }) as DotFunction,
-        shift: ((e: Evaluator, s: ISymbolNode, ...i: any[]): IValueNode => {
-            const v = e.variables.find(v => v.name === s.name)?.val.shift()
-            return {
-                type: Evaluator.getType(v),
-                value: v
-            };
-        }) as DotFunction,
-        first: ((e: Evaluator, s: ISymbolNode, ...i: any[]): IValueNode => {
-            const arr: any[] = e.variables.find(v => v.name === s.name)?.val;
-            const v = arr[0];
-            return {
-                type: Evaluator.getType(v),
-                value: v
-            };
-        }) as DotFunction
-    }
-}
 
 export default class Evaluator {
     private ast: ITopNode;

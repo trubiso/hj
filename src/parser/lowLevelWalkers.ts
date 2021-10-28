@@ -273,6 +273,7 @@ export const parseArray : Walker = (parser: Parser): INode => {
         elements: []
     } as IUnevaluatedArrayNode;
 
+    if (!(parser.currentToken.type === TokenType.SPECIAL && parser.currentToken.value === ']'))
     while(true) {
         const el = parseExpression(parser, ',', ']');
         arrayElementsNode.elements.push(el);
