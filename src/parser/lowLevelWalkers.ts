@@ -3,7 +3,7 @@ import Token, { TokenType, getTokenTypeName, BuiltIn, Keyword } from '../token'
 import { ParseError } from '../errors'
 import { Walker } from './walker';
 import { parseExpression } from './parseFunctions';
-import { INode, NodeType, ICodeBlockNode, IVardecNode, IExpressionNode, IIfStmtNode, IElseStmtNode, getNodeTypeName, IWhileStmtNode, IVarAssignNode, IFunctionCallNode, IValueNode, IOperatorNode, ISymbolNode, IFunctionArgumentsNode } from './nodes';
+import { INode, NodeType, ICodeBlockNode, IVardecNode, IExpressionNode, IIfStmtNode, IElseStmtNode, getNodeTypeName, IWhileStmtNode, IVarAssignNode, IFunctionCallNode, IValueNode, IOperatorNode, ISymbolNode, IFunctionArgumentsNode, IDotAccessNode, IUnevaluatedArrayNode } from './nodes';
 import Fraction from '../dataclasses/fraction';
 
 export const parseCodeBlock : Walker = (parser: Parser): INode => {
@@ -181,6 +181,7 @@ export const parseFunctionArguments : Walker = (parser: Parser): IFunctionArgume
         args: []
     } as IFunctionArgumentsNode;
 
+    if (!(parser.currentToken.type === TokenType.SPECIAL && parser.currentToken.value === ')'))
     while(true) {
         const t = parseExpression(parser, ',', ')');
         funcArgsNode.args.push(t);
@@ -242,4 +243,44 @@ export const parseValue : Walker = (parser: Parser): INode => {
         } as IValueNode;
     }
     throw 'Hey this shouldn\'t happen, something is wrong with the expression parser';
+}
+
+export const parseDotAccess : Walker = (parser: Parser): IDotAccessNode => {
+    const n = {
+        type: NodeType.DotAccess,
+        symbol: {
+            name: parser.currentToken.value
+        }
+    } as IDotAccessNode;
+    parser.current += 2; // skip the symbol and the dot
+    n.property = parser.currentToken.value; // the property comes after the dot
+    parser.current ++; // skip the property
+    if (parser.currentToken.type === TokenType.SPECIAL && parser.currentToken.value === '(') { // if it's a function call
+        parser.current ++; // skip starting parenthesis
+        n.args = parseFunctionArguments(parser) as IFunctionArgumentsNode;
+        parser.current++; // skip closing parenthesis
+    } else { // if not, it's a variable get/set. will add this later
+        //throw `this has not been implemented yet. sory !! :sad:`;
+    }
+    return n;
+}
+
+export const parseArray : Walker = (parser: Parser): INode => {
+    // skip the starting [ 
+    parser.current++;
+    let arrayElementsNode = {
+        type: NodeType.UnevaluatedArray,
+        elements: []
+    } as IUnevaluatedArrayNode;
+
+    while(true) {
+        const el = parseExpression(parser, ',', ']');
+        arrayElementsNode.elements.push(el);
+        if (parser.currentToken.type === TokenType.SPECIAL && [']'].includes(parser.currentToken.value)) break;
+        // skip the comma
+        parser.current++;
+    }
+    // skip the "]"
+    parser.current++;
+    return arrayElementsNode;
 }

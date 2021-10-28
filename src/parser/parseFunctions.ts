@@ -16,23 +16,3 @@ export function parseExpression(parser: Parser, ...delims: Delimiter[]): IExpres
     }
     return expression;
 }
-
-export function parseArray(parser: Parser): INode {
-    // skip the starting [ 
-    parser.current++;
-    let arrayElementsNode = {
-        type: NodeType.Array,
-        value: []
-    } as IValueNode;
-
-    while(true) {
-        const el = parseExpression(parser, ',', ']');
-        arrayElementsNode.value.push(el);
-        if (parser.currentToken.type === TokenType.SPECIAL && [']'].includes(parser.currentToken.value)) break;
-        // skip the comma
-        parser.current++;
-    }
-    // skip the "]"
-    parser.current++;
-    return arrayElementsNode;
-}

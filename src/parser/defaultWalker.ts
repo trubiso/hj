@@ -2,7 +2,7 @@ import Parser from './parser'
 import Token, { TokenType, getTokenTypeName, BuiltIn } from '../token'
 import { ParseError } from '../errors'
 import { Walker } from './walker';
-import { parseVariableDeclaration, parseControlStructure, parseFunctionCall, parseVariableAssignment, parseCodeBlock } from './lowLevelWalkers';
+import { parseVariableDeclaration, parseControlStructure, parseFunctionCall, parseVariableAssignment, parseCodeBlock, parseDotAccess } from './lowLevelWalkers';
 import { INode, NodeType } from './nodes';
 
 // the walker that handles tokens that start a general command, like a variable declaration
@@ -29,6 +29,8 @@ export const defaultWalker : Walker = (parser: Parser): INode => {
         // if we have a parenthesis, it's definitely a function call
         if (next.type === TokenType.SPECIAL && next.value === '(') {
             return parseFunctionCall(parser);
+        } else if (next.type === TokenType.SPECIAL && next.value === '.') {
+            return parseDotAccess(parser);
         } else { // if not, then it's either a variable assignment or incorrect syntax
             return parseVariableAssignment(parser); 
         }

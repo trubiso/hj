@@ -1,8 +1,8 @@
 import { ParseError } from "../errors";
 import Token, { TokenType } from "../token";
-import { parseFunctionCall, parseVariableAssignment, parseValue, parseOperator, parseSymbol } from "./lowLevelWalkers";
+import { parseFunctionCall, parseVariableAssignment, parseValue, parseOperator, parseSymbol, parseDotAccess, parseArray } from "./lowLevelWalkers";
 import { INode, NodeType } from "./nodes";
-import { parseArray, parseExpression } from "./parseFunctions";
+import { parseExpression } from "./parseFunctions";
 import Parser from "./parser";
 import { Walker } from "./walker";
 
@@ -32,6 +32,8 @@ export const expressionWalker : Walker = (parser: Parser): INode => {
         // if we have a parenthesis, it's definitely a function call
         if (next.type === TokenType.SPECIAL && next.value === '(') {
             return parseFunctionCall(parser);
+        } else if (next.type === TokenType.SPECIAL && next.value === '.') { // if we have a dot after, dot access
+            return parseDotAccess(parser);
         } else { // if not, then it's a variable
             return parseSymbol(parser); 
         }

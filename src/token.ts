@@ -8,7 +8,7 @@ export const TokenTypes = {
     KEYWORD : /^[\s]*(if|else|elif|while|for|return)\s/,
     SYMBOL  : /^[\s]*[A-Za-z_][\w]*/,
     OPERATOR: /^[\s]*(?:(?:==|<=|<|>=|>|!=)|(?:[+\-\/*]?=)|(?:[+\-\*]{2})|(?:[+\-\/*\=]))/,
-    SPECIAL : /^[\s]*(?:[\{\}\(\)\[\];]|=>)/,
+    SPECIAL : /^[\s]*(?:[\{\}\(\)\[\];]|=>|\.\.\.|\.)/,
     OTHER   : /^[\s]*(?:\,)/
 };
 

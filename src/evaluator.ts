@@ -4,7 +4,7 @@ import { EvaluationError, TypeError } from "./errors";
 import ExpressionEvaluator from "./expressionEvaluator";
 import Fraction from "./dataclasses/fraction";
 import { BuiltIn, TokenTypes } from "./token";
-import { INode, ITopNode, NodeType, IVardecNode, IExpressionNode, IFunctionCallNode, IValueNode, ISymbolNode, IOperatorNode, IIfStmtNode, ICodeBlockNode, IWhileStmtNode, IVarAssignNode } from "./parser/nodes";
+import { INode, ITopNode, NodeType, IVardecNode, IExpressionNode, IFunctionCallNode, IValueNode, ISymbolNode, IOperatorNode, IIfStmtNode, ICodeBlockNode, IWhileStmtNode, IVarAssignNode, IDotAccessNode, IUnevaluatedArrayNode } from "./parser/nodes";
 
 export interface IVar {
     name: string,
@@ -36,9 +36,82 @@ export const standardFunctions: any = {
     }
 };
 
+type DotFunction = (e: Evaluator, s: ISymbolNode, ...i: any[]) => IValueNode;
+type DotProp = (e: Evaluator, s: ISymbolNode, ...i: any[]) => IValueNode;
+
+export const dotProps: any = {
+    array: {
+        length: ((e: Evaluator, s: ISymbolNode): IValueNode => {
+            return {
+                type: NodeType.NumberLiteral,
+                value: e.variables.find(v => v.name === s.name)?.val.length
+            };
+        }) as DotProp
+    }
+}
+
+export const dotFunctions: any = {
+    array: {
+        has: ((e: Evaluator, s: ISymbolNode, ...i: any[]): IValueNode => {
+            return {
+                type: NodeType.Boolean,
+                value: e.variables.find(v => v.name === s.name)?.val.includes(i[0])
+            };
+        }) as DotFunction,
+        join: ((e: Evaluator, s: ISymbolNode, ...i: any[]): IValueNode => {
+            return {
+                type: NodeType.StringLiteral,
+                value: e.variables.find(v => v.name === s.name)?.val.join(i[0])
+            };
+        }) as DotFunction,
+        pop: ((e: Evaluator, s: ISymbolNode, ...i: any[]): IValueNode => {
+            const v = e.variables.find(v => v.name === s.name)?.val.pop()
+            return {
+                type: Evaluator.getType(v),
+                value: v
+            };
+        }) as DotFunction,
+        last: ((e: Evaluator, s: ISymbolNode, ...i: any[]): IValueNode => {
+            const arr: any[] = e.variables.find(v => v.name === s.name)?.val;
+            const v = arr[arr.length - 1];
+            return {
+                type: Evaluator.getType(v),
+                value: v
+            };
+        }) as DotFunction,
+        push: ((e: Evaluator, s: ISymbolNode, ...i: any[]): IValueNode => {
+            return {
+                type: NodeType.NumberLiteral,
+                value: e.variables.find(v => v.name === s.name)?.val.push(...i)
+            };
+        }) as DotFunction,
+        reverse: ((e: Evaluator, s: ISymbolNode, ...i: any[]): IValueNode => {
+            return {
+                type: NodeType.Array,
+                value: e.variables.find(v => v.name === s.name)?.val.reverse()
+            };
+        }) as DotFunction,
+        shift: ((e: Evaluator, s: ISymbolNode, ...i: any[]): IValueNode => {
+            const v = e.variables.find(v => v.name === s.name)?.val.shift()
+            return {
+                type: Evaluator.getType(v),
+                value: v
+            };
+        }) as DotFunction,
+        first: ((e: Evaluator, s: ISymbolNode, ...i: any[]): IValueNode => {
+            const arr: any[] = e.variables.find(v => v.name === s.name)?.val;
+            const v = arr[0];
+            return {
+                type: Evaluator.getType(v),
+                value: v
+            };
+        }) as DotFunction
+    }
+}
+
 export default class Evaluator {
     private ast: ITopNode;
-    private variables: IVar[];
+    public variables: IVar[];
 
     constructor(ast: ITopNode) {
         this.ast = ast;
@@ -47,6 +120,15 @@ export default class Evaluator {
 
     public prettyPrint() {
         console.log(this.prettifyNode(this.ast));
+    }
+
+    static getType(n: any) {
+        if (typeof n === 'string') return NodeType.StringLiteral;
+        if (typeof n === 'boolean') return NodeType.Boolean;
+        if (typeof n === 'number') return NodeType.NumberLiteral;
+        if (n instanceof Fraction) return NodeType.Fraction;
+        if (n.length) return NodeType.Array;
+        throw `Unsupported type: ${typeof n}`;
     }
 
     private prettifyNode(n: INode, il = 0 /* indentation level */) : string {
@@ -111,32 +193,8 @@ export default class Evaluator {
         return t;
     }
 
-    private nodesToLiterals(n : INode[]) : any[] {
-        return n.map(v => {
-            switch(v.type) {
-            case NodeType.Symbol:
-                return this.parseSymbol(v as ISymbolNode).val;
-            case NodeType.StringLiteral:
-            case NodeType.NumberLiteral:
-            case NodeType.Boolean:
-            case NodeType.Fraction:
-                return (v as IValueNode).value;
-            case NodeType.Expression:
-                let e = this.evaluateExpression(v as IExpressionNode);
-                return e;
-            case NodeType.Operator:
-                return (v as IOperatorNode).operator;
-            case NodeType.FunctionCall:
-                return this.evaluateFunctionCall(v as IFunctionCallNode); // WARNING: this could cause recursiveness
-            case NodeType.Array:
-                return this.nodesToLiterals((v as IValueNode).value); // WARNING: this could cause recursiveness
-            default:
-                return null;
-            }
-        }).filter(v => v !== null);
-    }
-
     private evaluateExpression(n : IExpressionNode) : any {
+        if (!n.type) return n;
         const p = (v: INode) : INode => { // this name is VERY descriptive. what does this function do? it p
             if (v.type === NodeType.Symbol) {
                 const r = this.parseSymbol(v as ISymbolNode);
@@ -164,11 +222,16 @@ export default class Evaluator {
                 case 'array':
                     return {
                         type: NodeType.Array,
-                        value: r.val.map((v: IExpressionNode) => this.evaluateExpression(v))
+                        value: r.val
                     } as IValueNode;
                 default:
                     throw "what"; // I feel that
                 }
+            } else if (v.type === NodeType.UnevaluatedArray) {
+                return {
+                    type: NodeType.Array,
+                    value: (v as IUnevaluatedArrayNode).elements.map((v: IExpressionNode) => this.evaluateExpression(v))
+                } as IValueNode;
             } else if (v.type === NodeType.Expression) {
                 const e = (v as IExpressionNode).expr.map(p);
                 return {
@@ -178,6 +241,8 @@ export default class Evaluator {
             } else if (v.type === NodeType.FunctionCall) {
                 const t = this.evaluateFunctionCall(v as IFunctionCallNode);
                 return {type: typeof t === "string" ? NodeType.StringLiteral : (typeof t === "number" ? NodeType.NumberLiteral : (typeof t === "boolean" ? NodeType.Boolean : (t instanceof Fraction ? NodeType.Fraction : NodeType.Symbol))), value: t} as IValueNode;
+            } else if (v.type === NodeType.DotAccess) {
+                return this.evaluateDotAccess(v as IDotAccessNode);
             } else {
                 return v as INode;
             }
@@ -242,9 +307,16 @@ export default class Evaluator {
         correspondingVar.val = this.evaluateExpression(n.varval);
     }
 
+    private evaluateDotAccess(n: IDotAccessNode): IValueNode {
+        const variable = n.symbol;
+        const property = n.property;
+        if (n.args) return dotFunctions[this.parseSymbol(variable).type][property](this, variable, ...n.args.args.map(arg => this.evaluateExpression(arg)));
+        else return dotProps[this.parseSymbol(variable).type][property](this, variable);
+    }
+
     private evaluateFunctionCall(n: IFunctionCallNode) {
         if (standardFunctions[n.name]) {
-            return standardFunctions[n.name](...this.nodesToLiterals(n.args.args));
+            return standardFunctions[n.name](...n.args.args.map(arg => this.evaluateExpression(arg)));
         } else {
             throw TypeError.functionNotFound(n);
         }
@@ -273,6 +345,9 @@ export default class Evaluator {
             break;
         case NodeType.VariableAssignment:
             this.evaluateVariableAssignment(node as IVarAssignNode);
+            break;
+        case NodeType.DotAccess:
+            this.evaluateDotAccess(node as IDotAccessNode);
             break;
         case NodeType.FunctionCall:
             this.evaluateFunctionCall(node as IFunctionCallNode);
