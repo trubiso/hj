@@ -47,7 +47,7 @@ This type contains a collection of untyped values, meaning that they contain a s
 `.last(n?)` | Returns the last n elements of the array. n defaults to 1. **Implemented**
 `.reverse()` | Reverses & returns the array. **Implemented**
 `.insert(item, index)` | Inserts an item at an index and returns the new array length. **Implemented**
-`.delete(index, amount)` | Deletes an element at an index (if amount is specified, it deletes the amount of elements from that index). **Implemented**
+`.delete(index, amount?)` | Deletes an element at an index (if amount is specified, it deletes the amount of elements from that index). **Implemented**
 `.pick()` | Returns a random element from the array. **Implemented**
 `.shuffle()` | Returns the shuffled version of the array. **Implemented**
 `.unique()` | Removes & returns duplicate elements from the array. **Implemented**
