@@ -1,12 +1,8 @@
 num max = input("How many numbers do you want? ");
 string output = "Numbers from 1 to " + stringify(max) + ": ";
-array numbers = [];
-num i = 0;
-while (i < max) {
-    numbers.append(numbers.length + 1);
-    i = i + 1;
-}
-for (number in numbers) {
+array r = range(max + 1);
+array neg = r[1:];
+for (number in neg) {
     output = output + stringify(number);
     if (number < max) {
         output = output + ", ";

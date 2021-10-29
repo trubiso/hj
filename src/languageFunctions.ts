@@ -21,7 +21,10 @@ export const standardFunctions: any = {
         }
         const p = s.split('/').map(v => parseInt(v));
         return new Fraction(p[0], p[1]);
-    }
+    },
+    range: (v: IValueNode) => new ArrayClass(...[...new Array(v.value).keys()].map(y => {
+        return { type: NodeType.NumberLiteral, value: y } as IValueNode
+    }))
 };
 
 export const dotProps = (accessee: IValueNode, property: ISymbolNode): IValueNode => {

@@ -103,6 +103,9 @@ export default class Evaluator {
         case NodeType.DotAccess:
             p = n as IDotAccessNode;
             return `${' '.repeat(il)}[Dot access with accessee ${this.prettifyNode(p.accessee, 0)} accessing prop/func ${this.prettifyNode(p.prop, 0)}]`;
+        case NodeType.ArrayAccess:
+            p = n as IArrayAccessNode;
+            return `${' '.repeat(il)}[Array access: ${p.varname}@${[p.start, p.step, p.end].map(v => v === undefined ? v : this.prettifyNode(v)).filter(v => v !== undefined).join(':')}]`;
         default:
             return `${' '.repeat(il)}[${getNodeTypeName(n.type)}]`;
         }
@@ -145,7 +148,7 @@ export default class Evaluator {
                 return this.evaluateDotAccess(v as IDotAccessNode);
             } else if (v.type === NodeType.ArrayAccess) {
                 const n = v as IArrayAccessNode;
-                return this.variables.find(r => r.name === n.varname)?.val.access(...[n.start, n.end, n.step].map(r => r ? this.evaluateExpression(r) : r));
+                return this.variables.find(r => r.name === n.varname)?.val.access(...[n.start, n.end, n.step].map(r => r ? this.evaluateExpression(r) : r), n.hasFirstSep);
             } else {
                 return v as INode;
             }
@@ -299,6 +302,7 @@ export default class Evaluator {
             this.variables[varIdx].val = v;
             this.run(n.code);
         });
+        this.variables.filter(v => v.name !== n.valSymbol.name);
     }
 
     private run(node: INode) {

@@ -46,6 +46,7 @@ export interface IArrayAccessNode extends INode {
     start?: IExpressionNode;
     end?: IExpressionNode;
     step?: IExpressionNode;
+    hasFirstSep: boolean;
 }
 
 export interface ISymbolNode extends INode {

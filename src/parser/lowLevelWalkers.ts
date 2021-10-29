@@ -328,11 +328,14 @@ export const parseArrayAccess : Walker = (parser: Parser): INode => {
     parser.current += 2; // skip name and starting [
     if (!checkToken(parser.currentToken, TokenType.SPECIAL, ':')) // because its optional
         n.start = parseExpression(parser, ':', ']'); // take start
+    if (!n.start?.expr.length) n.start = undefined;
     //else parser.current++; // just skip it if not lol
     parser.current ++; // skip either : or ]
     if (checkToken(parser.next(-1), TokenType.SPECIAL, ']')) return n; // if we skipped ], we can return
+    n.hasFirstSep = true;
     if (!checkToken(parser.currentToken, TokenType.SPECIAL, ':')) // because its optional
         n.end = parseExpression(parser, ':', ']'); // if we didn't return, we skipped over a :, so lets get the end
+    if (!n.end?.expr.length) n.end = undefined;
     //else parser.current++; // read the last comment about this
     parser.current ++; // skip either : or ]
     if (checkToken(parser.next(-1), TokenType.SPECIAL, ']')) return n; // if we skipped ], we can return
