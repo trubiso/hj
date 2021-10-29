@@ -30,80 +30,80 @@ export default class Fraction implements IDataClass{
         return simplifiedFracs.map(v => new Fraction(d/v.d * v.n, d));
     }
 
-    static addMultiple(...fracs: Fraction[]) { return Fraction.commonDenominator(...fracs).reduce((a, b) => new Fraction(a.n + b.n, a.d)).simplify(); }
-    static subtractMultiple(...fracs: Fraction[]) { return Fraction.commonDenominator(...fracs).reduce((a, b) => new Fraction(a.n - b.n, a.d)).simplify(); }
-    static multiplyMultiple(...fracs: Fraction[]) { return fracs.reduce((a, b) => new Fraction(a.n * b.n, a.d * b.d)).simplify(); }
-    static divideMultiple(...fracs: Fraction[]) { return fracs.reduce((a, b) => new Fraction(a.n * b.d, a.d * b.n)).simplify(); }
+    static add(...fracs: Fraction[]) { return Fraction.commonDenominator(...fracs).reduce((a, b) => new Fraction(a.n + b.n, a.d)).simplify(); }
+    static subtract(...fracs: Fraction[]) { return Fraction.commonDenominator(...fracs).reduce((a, b) => new Fraction(a.n - b.n, a.d)).simplify(); }
+    static multiply(...fracs: Fraction[]) { return fracs.reduce((a, b) => new Fraction(a.n * b.n, a.d * b.d)).simplify(); }
+    static divide(...fracs: Fraction[]) { return fracs.reduce((a, b) => new Fraction(a.n * b.d, a.d * b.n)).simplify(); }
 
-    public addSelf(...fracs: Fraction[]) { return Fraction.addMultiple(this, ...fracs); }
-    public subtractSelf(...fracs: Fraction[]) { return Fraction.subtractMultiple(this, ...fracs); }
-    public multiplySelf(...fracs: Fraction[]) { return Fraction.multiplyMultiple(this, ...fracs); }
-    public divideSelf(...fracs: Fraction[]) { return Fraction.divideMultiple(this, ...fracs); }
+    public add(...fracs: Fraction[]) { return Fraction.add(this, ...fracs); }
+    public subtract(...fracs: Fraction[]) { return Fraction.subtract(this, ...fracs); }
+    public multiply(...fracs: Fraction[]) { return Fraction.multiply(this, ...fracs); }
+    public divide(...fracs: Fraction[]) { return Fraction.divide(this, ...fracs); }
 
-    public add(frac1: IValueNode, frac2: IValueNode): IValueNode { 
+    public _add(frac1: IValueNode, frac2: IValueNode): IValueNode { 
         return {
             type: NodeType.Fraction,
             value: frac1.value.addSelf(frac2.value)
         } as IValueNode
     }
-    public subtract(frac1: IValueNode, frac2: IValueNode): IValueNode { 
+    public _subtract(frac1: IValueNode, frac2: IValueNode): IValueNode { 
         return {
             type: NodeType.Fraction,
             value: frac1.value.subtractSelf(frac2.value)
         } as IValueNode
     }
-    public multiply(frac1: IValueNode, frac2: IValueNode): IValueNode { 
+    public _multiply(frac1: IValueNode, frac2: IValueNode): IValueNode { 
         return {
             type: NodeType.Fraction,
             value: frac1.value.multiplySelf(frac2.value)
         } as IValueNode
     }
-    public divide(frac1: IValueNode, frac2: IValueNode): IValueNode { 
+    public _divide(frac1: IValueNode, frac2: IValueNode): IValueNode { 
         return {
             type: NodeType.Fraction,
             value: frac1.value.divideSelf(frac2.value)
         } as IValueNode
     }
-    public pow(frac1: IValueNode, frac2: IValueNode): IValueNode { 
+    public _pow(frac1: IValueNode, frac2: IValueNode): IValueNode { 
         throw 'Unsupported operator for two fractions: \'**\''
     }
-    public equals(frac1: IValueNode, frac2: IValueNode): IValueNode {
+    public _equals(frac1: IValueNode, frac2: IValueNode): IValueNode {
         const sf: Fraction[] = [frac1, frac2].map(v => v.value.simplify());
         return {
             type: NodeType.Boolean,
             value: sf[0].n === sf[1].n && sf[0].d === sf[1].d
         } as IValueNode;
     }
-    public equalsNot(frac1: IValueNode, frac2: IValueNode): IValueNode {
+    public _equalsNot(frac1: IValueNode, frac2: IValueNode): IValueNode {
         return {
             type: NodeType.Boolean,
-            value: !this.equals(frac1, frac2).value
+            value: !this._equals(frac1, frac2).value
         } as IValueNode;
     }
-    public greater(frac1: IValueNode, frac2: IValueNode): IValueNode {
+    public _greater(frac1: IValueNode, frac2: IValueNode): IValueNode {
         const cd = Fraction.commonDenominator(frac1.value, frac2.value);
         return {
             type: NodeType.Boolean,
             value: cd[0].n > cd[1].n
         } as IValueNode;
     }
-    public greaterEqual(frac1: IValueNode, frac2: IValueNode): IValueNode {
+    public _greaterEqual(frac1: IValueNode, frac2: IValueNode): IValueNode {
         return {
             type: NodeType.Boolean,
-            value: !this.smaller(frac1, frac2).value
+            value: !this._smaller(frac1, frac2).value
         } as IValueNode;
     }
-    public smaller(frac1: IValueNode, frac2: IValueNode): IValueNode {
+    public _smaller(frac1: IValueNode, frac2: IValueNode): IValueNode {
         const cd = Fraction.commonDenominator(frac1.value, frac2.value);
         return {
             type: NodeType.Boolean,
             value: cd[0].n < cd[1].n
         } as IValueNode;
     }
-    public smallerEqual(frac1: IValueNode, frac2: IValueNode): IValueNode {
+    public _smallerEqual(frac1: IValueNode, frac2: IValueNode): IValueNode {
         return {
             type: NodeType.Boolean,
-            value: !this.greater(frac1, frac2).value
+            value: !this._greater(frac1, frac2).value
         } as IValueNode;
     }
 }

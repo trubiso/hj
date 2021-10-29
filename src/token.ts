@@ -5,7 +5,7 @@ export const TokenTypes = {
     BOOLEAN : /^[\s]*(?:true|false)/,
     BUILTIN : /^[\s]*(?:frac|num|void|string|frac|bool|array)\s/,
     USRTYPES: /^[\s]*(?:class|function)\s/,
-    KEYWORD : /^[\s]*(if|else|elif|while|for|return)\s/,
+    KEYWORD : /^[\s]*(if|else|elif|while|for|in|return)\s/,
     SYMBOL  : /^[\s]*[A-Za-z_][\w]*/,
     OPERATOR: /^[\s]*(?:(?:==|<=|<|>=|>|!=)|(?:[+\-\/*]?=)|(?:[+\-\*]{2})|(?:[+\-\/*\=]))/,
     SPECIAL : /^[\s]*(?:[\{\}\(\)\[\];]|=>|\.\.\.|\.)/,

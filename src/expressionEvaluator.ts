@@ -2,6 +2,7 @@ import IDataClass from "./dataclasses/dataClass";
 import Fraction from "./dataclasses/fraction";
 import Number from "./dataclasses/number";
 import String from "./dataclasses/string";
+import { SyntaxError } from "./errors";
 import { getNodeTypeName, IExpressionNode, IOperatorNode, IValueNode, NodeType } from "./parser/nodes";
 import { Operator } from "./token";
 
@@ -61,12 +62,12 @@ export default class ExpressionEvaluator {
             }
 
             switch (operator.operator) {
-            case '==': return dataclass.equals(value1, value2)
-            case '!=': return dataclass.equalsNot(value1, value2)
-            case '>': return dataclass.greater(value1, value2)
-            case '>=': return dataclass.greaterEqual(value1, value2)
-            case '<': return dataclass.smaller(value1, value2)
-            case '<=': return dataclass.smallerEqual(value1, value2)
+            case '==': return dataclass._equals(value1, value2)
+            case '!=': return dataclass._equalsNot(value1, value2)
+            case '>': return dataclass._greater(value1, value2)
+            case '>=': return dataclass._greaterEqual(value1, value2)
+            case '<': return dataclass._smaller(value1, value2)
+            case '<=': return dataclass._smallerEqual(value1, value2)
             default: throw `Wth how is this possible`;
             }
         }
@@ -79,11 +80,11 @@ export default class ExpressionEvaluator {
 
         // and perform the operation with the dataclass (may throw errors that the operator is unsupported for that dataclass)
         switch (operator.operator) {
-        case '+': return dataclass.add(value1, value2)
-        case '-': return dataclass.subtract(value1, value2)
-        case '*': return dataclass.multiply(value1, value2)
-        case '/': return dataclass.divide(value1, value2)
-        case '**': return dataclass.pow(value1, value2)
+        case '+': return dataclass._add(value1, value2)
+        case '-': return dataclass._subtract(value1, value2)
+        case '*': return dataclass._multiply(value1, value2)
+        case '/': return dataclass._divide(value1, value2)
+        case '**': return dataclass._pow(value1, value2)
         default: throw `Invalid operator: \'${operator.operator}\'.`
         }
     }
@@ -133,7 +134,7 @@ export default class ExpressionEvaluator {
                     if (this.possibleValueTypes.includes(value.type)) {
                         continue;
                     } else {
-                        throw `Invalid Node type next to an operator! Got: ${getNodeTypeName(value.type)}` // TODO: better error
+                        throw SyntaxError.invalidNode('operator', 'a valid value', value.type)
                     }
                 }
                 // get the result

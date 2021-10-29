@@ -30,14 +30,13 @@ export default class Parser {
     }
 
     public parse() : ITopNode {
-        const st = Date.now();
+        const startTime = Date.now();
+
         this.current = 0;
         let ast = {
             type: NodeType.Program,
             body: []
         } as ITopNode;
-
-        process.stdout.write(chalk.yellow("Parsing tokens..."));
 
         while (this.current < this.tokens.length) {
             if (this.tokens[this.current].type === TokenType.SPECIAL && this.tokens[this.current].value === ';') {
@@ -48,9 +47,7 @@ export default class Parser {
             ast.body.push(n);
         }
 
-        process.stdout.write("\r\x1b[K");
-        console.log(chalk.green("Parsed tokens successfully. ") + chalk.grey(`(${Date.now() - st} ms)`));
-
+        console.log(chalk.green("Parsed tokens successfully. ") + chalk.grey(`(${Date.now() - startTime} ms)`));
         return ast;
     }
 }

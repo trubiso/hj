@@ -1,13 +1,18 @@
 import chalk from "chalk";
 import { IVar } from "./evaluator";
-import { ISymbolNode, IFunctionCallNode, IVardecNode, INode, getNodeTypeName } from "./parser/nodes";
-import Token, { getTokenTypeName } from "./token";
+import { ISymbolNode, IFunctionCallNode, IVardecNode, INode, getNodeTypeName, NodeType } from "./parser/nodes";
+import Pos from "./pos";
+import Token, { getTokenTypeName, TokenType } from "./token";
 
 export class TokenError extends Error {
     public name = "";
 
     constructor(message: string) {
         super(chalk.red("[TokenError] ") + message);
+    }
+
+    static invalidToken(pos: Pos) {
+        return new TokenError(`Invalid token at position ${pos.toString()}`);
     }
 }
 
@@ -16,6 +21,18 @@ export class SyntaxError extends Error {
 
     constructor(message: string) {
         super(chalk.red("[SyntaxError] ") + message);
+    }
+
+    static invalidToken(currentToken: string, expectedToken: string, givenToken?: TokenType) {
+        return new SyntaxError(`Expected ${expectedToken} after ${currentToken}, got ${givenToken ? getTokenTypeName(givenToken) : "none"} instead.`);
+    }
+
+    static invalidNode(currentNode: string, expectedNode: string, givenNode?: NodeType) {
+        return new SyntaxError(`Expected ${expectedNode} after ${currentNode}, got ${givenNode ? getNodeTypeName(givenNode) : "none"} instead.`);
+    }
+
+    static unsupportedToken(token: Token) {
+        return new SyntaxError(`Unsupported ${getTokenTypeName(token.type)}: ${token.value}`);
     }
 }
 
@@ -28,6 +45,10 @@ export class ParseError extends Error {
 
     static invalidToken(context: string, token: Token) {
         return new ParseError(`Invalid token type for context \'${context}\': ${getTokenTypeName(token.type)}`)
+    }
+
+    static unknown(additional: string) {
+        return new ParseError(`An unknown error occurred - ${additional}`);
     }
 }
 

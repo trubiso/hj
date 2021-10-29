@@ -1,16 +1,16 @@
 import { IValueNode } from "../parser/nodes";
 
 export default interface IDataClass {
-    add(value1: IValueNode, value2: IValueNode): IValueNode;
-    subtract(value1: IValueNode, value2: IValueNode): IValueNode;
-    multiply(value1: IValueNode, value2: IValueNode): IValueNode;
-    divide(value1: IValueNode, value2: IValueNode): IValueNode;
-    pow(value1: IValueNode, value2: IValueNode): IValueNode;
+    _add(value1: IValueNode, value2: IValueNode): IValueNode;
+    _subtract(value1: IValueNode, value2: IValueNode): IValueNode;
+    _multiply(value1: IValueNode, value2: IValueNode): IValueNode;
+    _divide(value1: IValueNode, value2: IValueNode): IValueNode;
+    _pow(value1: IValueNode, value2: IValueNode): IValueNode;
 
-    equals(value1: IValueNode, value2: IValueNode): IValueNode;
-    equalsNot(value1: IValueNode, value2: IValueNode): IValueNode;
-    greater(value1: IValueNode, value2: IValueNode): IValueNode;
-    greaterEqual(value1: IValueNode, value2: IValueNode): IValueNode;
-    smaller(value1: IValueNode, value2: IValueNode): IValueNode;
-    smallerEqual(value1: IValueNode, value2: IValueNode): IValueNode;
+    _equals(value1: IValueNode, value2: IValueNode): IValueNode;
+    _equalsNot(value1: IValueNode, value2: IValueNode): IValueNode;
+    _greater(value1: IValueNode, value2: IValueNode): IValueNode;
+    _greaterEqual(value1: IValueNode, value2: IValueNode): IValueNode;
+    _smaller(value1: IValueNode, value2: IValueNode): IValueNode;
+    _smallerEqual(value1: IValueNode, value2: IValueNode): IValueNode;
 }

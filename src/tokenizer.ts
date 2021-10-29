@@ -1,4 +1,5 @@
 import chalk from "chalk";
+import { TokenError } from "./errors";
 import Pos from "./pos";
 import Token, { TokenTypes } from "./token";
 
@@ -47,8 +48,6 @@ export default class Tokenizer {
 
     public createTokens() {
         const startTime = Date.now();
-        process.stdout.write(chalk.yellow("Tokenizing code...")); // i use process.stdout.write here instead of console.log to be able to remove the line later
-
         const tokens : Token[] = [];
 
         while (this.slice) { // loop until the slice is empty
@@ -63,16 +62,14 @@ export default class Tokenizer {
             }
 
             if (token === null) { // if there were no token type matches it's invalid
-                throw `Invalid token at position ${this.pos.toString()}`;
+                throw TokenError.invalidToken(this.pos);
             }
 
             tokens.push(token as Token); // add the token (typecast because now we know for certain it *is* a token)
             this.advance((token as Token).value.length); // & advance to the next token, rinse and repeat
         }
 
-        process.stdout.write("\r\x1b[K"); // remove last line and move cursor to beginning
         console.log(chalk.green(`Successfully tokenized code. `) + chalk.grey(`(${Date.now() - startTime} ms)`));
-
         return tokens;
     }
 }

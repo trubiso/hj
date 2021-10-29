@@ -5,7 +5,7 @@ export function getNodeTypeName(n: NodeType) {
 }
 
 export enum NodeType {
-    Program, NumberLiteral, Array, UnevaluatedArray, StringLiteral, Boolean, Fraction, Symbol, VariableDeclaration, VariableAssignment, Expression, FunctionCall, DotAccess, FunctionArguments, Operator, CodeBlock, IfStmt, ElseStmt, WhileStmt, Comma, NullNode
+    Program, NumberLiteral, Array, UnevaluatedArray, StringLiteral, Boolean, Fraction, Symbol, VariableDeclaration, VariableAssignment, Expression, FunctionCall, DotAccess, FunctionArguments, Operator, CodeBlock, IfStmt, ElseStmt, WhileStmt, ArrayForStmt, ClassicForStmt, Comma, NullNode
 }
 
 export interface INode {
@@ -18,6 +18,11 @@ export interface IValueNode extends INode {
 
 export interface IUnevaluatedArrayNode extends INode {
     elements: IExpressionNode[]
+}
+
+export interface IDotAccessNode extends INode {
+    accessee: IExpressionNode | ISymbolNode | IDotAccessNode;
+    prop: ISymbolNode | IFunctionCallNode;
 }
 
 export interface ITopNode extends INode {
@@ -52,12 +57,6 @@ export interface IFunctionCallNode extends INode {
     args: IFunctionArgumentsNode;
 }
 
-export interface IDotAccessNode extends INode {
-    symbol: ISymbolNode;
-    property: string;
-    args?: IFunctionArgumentsNode;
-}
-
 export interface IFunctionArgumentsNode extends INode {
     args: IExpressionNode[]
 }
@@ -67,18 +66,24 @@ export interface ICodeBlockNode extends INode {
 }
 
 export interface IIfStmtNode extends INode {
-    condition: IExpressionNode,
-    code: ICodeBlockNode,
-    else?: IElseStmtNode
+    condition: IExpressionNode;
+    code: ICodeBlockNode;
+    else?: IElseStmtNode;
+}
+
+export interface IArrayForStmtNode extends INode {
+    arr: ISymbolNode | IValueNode;
+    valSymbol: ISymbolNode;
+    code: ICodeBlockNode;
 }
 
 export interface IElseStmtNode extends INode {
-    code: ICodeBlockNode | IIfStmtNode
+    code: ICodeBlockNode | IIfStmtNode;
 }
 
 export interface IWhileStmtNode extends INode {
-    condition: IExpressionNode,
-    code: ICodeBlockNode
+    condition: IExpressionNode;
+    code: ICodeBlockNode;
 }
 
 export interface ICommaNode extends INode {};

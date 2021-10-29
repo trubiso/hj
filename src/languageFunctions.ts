@@ -1,17 +1,19 @@
 import prompt from "prompt-sync";
 import Fraction from "./dataclasses/fraction";
+import ArrayClass from "./dataclasses/array"
 import Evaluator, { IVar } from "./evaluator";
-import { ISymbolNode, IValueNode, NodeType } from "./parser/nodes";
+import { getNodeTypeName, IFunctionCallNode, ISymbolNode, IValueNode, NodeType } from "./parser/nodes";
 import { TokenTypes } from "./token";
+import ExpressionEvaluator from "./expressionEvaluator";
 
 export const standardFunctions: any = {
-    print: (...v: any[]) => {
-        console.log(...v.map(r => r instanceof Fraction ? r.toString() : r))
+    print: (...v: IValueNode[]) => {
+        console.log(...v.map(r => r.value).map(r => (r instanceof Fraction || r instanceof ArrayClass) ? r.toString() : r))
     },
-    stringify: (...v: any[]) => v.map((y: any) => y.toString()).join(' '),
-    sqrt: Math.sqrt,
-    input: (v: string) => {
-        const s = prompt({ sigint: true } as prompt.Config)(v)
+    stringify: (...v: IValueNode[]) => v.map(y => y.value.toString()).join(' '),
+    sqrt: (v: IValueNode) => Math.sqrt(v.value),
+    input: (v: IValueNode) => {
+        const s = prompt({ sigint: true } as prompt.Config)(v.value)
         if (s.trim().match(TokenTypes.FRACTION) === null) {
             if (s.includes('.') && parseFloat(s)) return parseFloat(s);
             if (parseInt(s)) return parseInt(s);
@@ -22,35 +24,53 @@ export const standardFunctions: any = {
     }
 };
 
-type DotFunction = (e: Evaluator, s: ISymbolNode, ...i: any[]) => IValueNode;
-type DotProp = (e: Evaluator, s: ISymbolNode, ...i: any[]) => IValueNode;
-
-export const dotProps: any = {
-    array: {
-        length: ((e: Evaluator, s: ISymbolNode): IValueNode => {
-            return {
-                type: NodeType.NumberLiteral,
-                value: e.variables.find(v => v.name === s.name)?.val.length
-            };
-        }) as DotProp
+export const dotProps = (accessee: IValueNode, property: ISymbolNode): IValueNode => {
+    switch(accessee.type) {
+    case NodeType.Array:
+        break;
+    default:
+        throw 'Invalid accessee type! (Only arrays are available for now)';
     }
+
+    for (const [key, value] of Object.entries(accessee.value)) {
+        if (key === property.name && typeof value !== 'function') {
+            return {
+                type: Evaluator.getType(value),
+                value: value
+            } as IValueNode;
+        }
+    }
+    throw `This property (${property.name}) does not exist on ${accessee.value.name}!`;
 }
 
-export const dotFunctions: any = {
-    array: {
-        has: ((e: Evaluator, s: ISymbolNode, ...i: any[]): IValueNode => {
+export const dotFunctions = (accessee: IValueNode, func: IFunctionCallNode, evaluator: Evaluator) => {
+    switch(accessee.type) {
+    case NodeType.Array:
+        break;
+    default:
+        throw 'Invalid accessee type! (Only arrays are available for now)';
+    }
+
+    for (const [key, value] of Object.entries(accessee.value)) {
+        if (key === func.name && typeof value === 'function') {
+            const parsedArgs = func.args.args.map(v => evaluator.evaluateExpression(v));
+            const result = value(...parsedArgs);
+            return {
+                type: Evaluator.getType(result),
+                value: result
+            } as IValueNode;
+        }
+    }
+    throw `This function (${func.name}) does not exist on ${accessee.value}!`;
+}
+/*    array: {
+        has: ((e: Evaluator, s: ISymbolNode, ...i: IValueNode[]): IValueNode => {
             return {
                 type: NodeType.Boolean,
-                value: e.variables.find(v => v.name === s.name)?.val.includes(i[0])
+                value: e.variables.find(v => v.name === s.name)?.val.has(i[0])
             };
         }) as DotFunction,
-        join: ((e: Evaluator, s: ISymbolNode, ...i: any[]): IValueNode => {
-            return {
-                type: NodeType.StringLiteral,
-                value: e.variables.find(v => v.name === s.name)?.val.join(i[0])
-            };
-        }) as DotFunction,
-        pop: ((e: Evaluator, s: ISymbolNode, ...i: any[]): IValueNode => {
+        /*pop: ((e: Evaluator, s: ISymbolNode, ...i: IValueNode[]): IValueNode => {
             const arr: any[] = e.variables.find(v => v.name === s.name)?.val;
             if (i[0] && i[0] !== 1) {
                 const v = e.variables.find(v => v.name === s.name)?.val.splice(arr.length - i[0], i[0]);
@@ -66,7 +86,7 @@ export const dotFunctions: any = {
                 };
             }
         }) as DotFunction,
-        last: ((e: Evaluator, s: ISymbolNode, ...i: any[]): IValueNode => {
+        last: ((e: Evaluator, s: ISymbolNode, ...i: IValueNode[]): IValueNode => {
             const arr: any[] = e.variables.find(v => v.name === s.name)?.val;
             if (i[0] && i[0] !== 1) {
                 const v = arr.slice(-i[0]);
@@ -81,26 +101,28 @@ export const dotFunctions: any = {
                     value: v
                 };
             }
-        }) as DotFunction,
-        append: ((e: Evaluator, s: ISymbolNode, ...i: any[]): IValueNode => {
+        }) as DotFunction,*//*
+        append: ((e: Evaluator, s: ISymbolNode, ...i: IValueNode[]): IValueNode => {
+            i.forEach(y => e.variables.find(v => v.name === s.name)?.val.append(y));
             return {
                 type: NodeType.NumberLiteral,
-                value: e.variables.find(v => v.name === s.name)?.val.push(...i)
+                value: e.variables.find(v => v.name === s.name)?.val.length
             };
         }) as DotFunction,
-        prepend: ((e: Evaluator, s: ISymbolNode, ...i: any[]): IValueNode => {
+        prepend: ((e: Evaluator, s: ISymbolNode, ...i: IValueNode[]): IValueNode => {
+            i.forEach(y => e.variables.find(v => v.name === s.name)?.val.prepend(y));
             return {
                 type: NodeType.NumberLiteral,
-                value: e.variables.find(v => v.name === s.name)?.val.unshift(...i)
+                value: e.variables.find(v => v.name === s.name)?.val.length
             };
         }) as DotFunction,
-        reverse: ((e: Evaluator, s: ISymbolNode, ...i: any[]): IValueNode => {
+        /*reverse: ((e: Evaluator, s: ISymbolNode, ...i: IValueNode[]): IValueNode => {
             return {
                 type: NodeType.Array,
                 value: e.variables.find(v => v.name === s.name)?.val.reverse()
             };
         }) as DotFunction,
-        shift: ((e: Evaluator, s: ISymbolNode, ...i: any[]): IValueNode => {
+        shift: ((e: Evaluator, s: ISymbolNode, ...i: IValueNode[]): IValueNode => {
             if (i[0] && i[0] !== 1) {
                 const v = e.variables.find(v => v.name === s.name)?.val.splice(0, i[0]);
                 return {
@@ -115,7 +137,7 @@ export const dotFunctions: any = {
                 };
             }
         }) as DotFunction,
-        first: ((e: Evaluator, s: ISymbolNode, ...i: any[]): IValueNode => {
+        first: ((e: Evaluator, s: ISymbolNode, ...i: IValueNode[]): IValueNode => {
             const arr: any[] = e.variables.find(v => v.name === s.name)?.val;
             if (i[0] && i[0] !== 1) {
                 const v = arr.slice(0, i[0]);
@@ -131,7 +153,7 @@ export const dotFunctions: any = {
                 };
             }
         }) as DotFunction,
-        unique: ((e: Evaluator, s: ISymbolNode, ...i: any[]): IValueNode => {
+        unique: ((e: Evaluator, s: ISymbolNode, ...i: IValueNode[]): IValueNode => {
             const arr: any[] = e.variables.find(v => v.name === s.name)?.val;
             const arrIdx = e.variables.findIndex(v => v.name === s.name);
             const unique: any[] = [];
@@ -142,7 +164,8 @@ export const dotFunctions: any = {
                 value: unique
             };
         }) as DotFunction,
-        shuffle: ((e: Evaluator, s: ISymbolNode, ...i: any[]): IValueNode => {
+        // for trubiso later: leave that out for no, gonna be complicated
+        shuffle: ((e: Evaluator, s: ISymbolNode, ...i: IValueNode[]): IValueNode => {
             const arr: any[] = e.variables.find(v => v.name === s.name)?.val;
             const arrIdx = e.variables.findIndex(v => v.name === s.name);
 
@@ -161,7 +184,7 @@ export const dotFunctions: any = {
                 value: shuffled
             };
         }) as DotFunction,
-        pick: ((e: Evaluator, s: ISymbolNode, ...i: any[]): IValueNode => {
+        pick: ((e: Evaluator, s: ISymbolNode, ...i: IValueNode[]): IValueNode => {
             const arr: any[] = e.variables.find(v => v.name === s.name)?.val;
             const v = arr[Math.floor(Math.random() * arr.length)];
             return {
@@ -169,7 +192,7 @@ export const dotFunctions: any = {
                 value: v
             };
         }) as DotFunction,
-        fill: ((e: Evaluator, s: ISymbolNode, ...i: any[]): IValueNode => {
+        fill: ((e: Evaluator, s: ISymbolNode, ...i: IValueNode[]): IValueNode => {
             const arr: any[] = e.variables.find(v => v.name === s.name)?.val;
             const arrIdx = e.variables.findIndex(v => v.name === s.name);
             
@@ -184,7 +207,7 @@ export const dotFunctions: any = {
                 value: filled
             };
         }) as DotFunction,
-        insert: ((e: Evaluator, s: ISymbolNode, ...i: any[]): IValueNode => {
+        insert: ((e: Evaluator, s: ISymbolNode, ...i: IValueNode[]): IValueNode => {
             const arr: any[] = e.variables.find(v => v.name === s.name)?.val;
             e.variables.find(v => v.name === s.name)!.val = [...arr.slice(0, i[1]), i[0], ...arr.slice(i[1])];
 
@@ -193,24 +216,25 @@ export const dotFunctions: any = {
                 value: arr.length + 1
             };
         }) as DotFunction,
-        delete: ((e: Evaluator, s: ISymbolNode, ...i: any[]): IValueNode => {
+        delete: ((e: Evaluator, s: ISymbolNode, ...i: IValueNode[]): IValueNode => {
             e.variables.find(v => v.name === s.name)?.val.splice(i[0], i[1]);
             return {
                 type: NodeType.Boolean,
                 value: e.variables.find(v => v.name === s.name)?.val.length
             };
         }) as DotFunction,
-        h: ((e: Evaluator, s: ISymbolNode, ...i: any[]): IValueNode => {
+        h: ((e: Evaluator, s: ISymbolNode, ...i: IValueNode[]): IValueNode => {
             return {
                 type: NodeType.Array,
                 value: dotFunctions['array'].fill(e, s, "h").value
             };
         }) as DotFunction,
-        j: ((e: Evaluator, s: ISymbolNode, ...i: any[]): IValueNode => {
+        j: ((e: Evaluator, s: ISymbolNode, ...i: IValueNode[]): IValueNode => {
             return {
                 type: NodeType.Array,
                 value: dotFunctions['array'].fill(e, s, "j").value
             };
-        }) as DotFunction
+        }) as DotFunction*//*
     }
 }
+}*/

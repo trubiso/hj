@@ -1,9 +1,9 @@
 import Parser from './parser'
 import Token, { TokenType, getTokenTypeName, BuiltIn, Keyword } from '../token'
-import { ParseError } from '../errors'
+import { ParseError, SyntaxError, UnimplementedError } from '../errors'
 import { Walker } from './walker';
 import { parseExpression } from './parseFunctions';
-import { INode, NodeType, ICodeBlockNode, IVardecNode, IExpressionNode, IIfStmtNode, IElseStmtNode, getNodeTypeName, IWhileStmtNode, IVarAssignNode, IFunctionCallNode, IValueNode, IOperatorNode, ISymbolNode, IFunctionArgumentsNode, IDotAccessNode, IUnevaluatedArrayNode } from './nodes';
+import { INode, NodeType, ICodeBlockNode, IVardecNode, IExpressionNode, IIfStmtNode, IElseStmtNode, getNodeTypeName, IWhileStmtNode, IVarAssignNode, IFunctionCallNode, IValueNode, IOperatorNode, ISymbolNode, IFunctionArgumentsNode, IUnevaluatedArrayNode, IArrayForStmtNode, IDotAccessNode } from './nodes';
 import Fraction from '../dataclasses/fraction';
 
 export const parseCodeBlock : Walker = (parser: Parser): INode => {
@@ -66,9 +66,9 @@ export const parseControlStructure : Walker = (parser: Parser): INode => {
         parser.current ++;
 
         node.code = parser.walk() as ICodeBlockNode;
+        originalCurrent = parser.current; 
         next = parser.walk();
         
-        originalCurrent = parser.current; 
         if (next.type === NodeType.ElseStmt) {
             node.else = (next as IElseStmtNode);
         } else {
@@ -111,7 +111,7 @@ export const parseControlStructure : Walker = (parser: Parser): INode => {
         parser.current++;
         next = parser.walk();
         if (!next.type) {
-            throw 'You have to put at least *something* after the else block'
+            throw SyntaxError.invalidToken('else', 'if statement or code block')
         }
         switch(next.type) {
         case NodeType.IfStmt:
@@ -121,7 +121,7 @@ export const parseControlStructure : Walker = (parser: Parser): INode => {
             node.code = (next as ICodeBlockNode);
             break;
         default:
-            throw `You can't put a token with the type ${getNodeTypeName(next.type)} after an else!`;
+            throw SyntaxError.invalidNode('else', 'if statement or code block', next.type)
         }
         return node;
     case 'while':
@@ -133,8 +133,25 @@ export const parseControlStructure : Walker = (parser: Parser): INode => {
         parser.current ++;
         node.code = parser.walk() as ICodeBlockNode;
         return node;
+    case 'for':
+        if (parser.next().type === TokenType.SPECIAL && parser.next().value === '(') {
+            throw new UnimplementedError('ClassicForStmt');
+        } else {
+            node = {
+                type: NodeType.ArrayForStmt
+            } as IArrayForStmtNode;
+            parser.current++; // skip the for
+            node.valSymbol = parser.walk() as ISymbolNode; // get the symbol name
+            parser.current++; // skip the in
+            node.arr = parser.walk() as ISymbolNode | IValueNode; // get the array as a literal / symbol
+            if (![NodeType.StringLiteral, NodeType.Array, NodeType.Symbol].includes(node.arr.type)) {
+                throw SyntaxError.invalidNode('for ... in', 'string literal, array or symbol', node.arr.type);
+            }
+            node.code = parser.walk() as ICodeBlockNode; // get the code
+            return node; // and we're done
+        }
     default:
-        throw `Unsupported keyword: ${parser.currentToken.value}`;
+        throw SyntaxError.unsupportedToken(parser.currentToken);
     }
 }
 
@@ -145,7 +162,11 @@ export const parseVariableAssignment : Walker = (parser: Parser): INode => {
     const varValue = parseExpression(parser, ';');
     
     if (!(varName.type === TokenType.SYMBOL && asgnSymbol.type === TokenType.OPERATOR && asgnSymbol.value === '=')) {
-        throw `Invalid syntax for variable assignment (perhaps you did +=, dw, it'll be added later)`;
+        if (varName.type !== TokenType.SYMBOL)
+            throw SyntaxError.invalidToken('a type (inside a variable assignment structure)', 'operator', varName.type);
+        if (asgnSymbol.type !== TokenType.OPERATOR)
+            throw SyntaxError.invalidToken('variable name', 'operator', asgnSymbol.type);
+        throw new UnimplementedError("Operators that aren't = inside variable assignment");
     }
 
     const varAsgn = {
@@ -164,14 +185,12 @@ export const parseFunctionCall : Walker = (parser: Parser): INode => {
     
     // check if the next token is "(" (it has to be)
     let openParen = parser.next();
-    if (!(openParen.type === TokenType.SPECIAL && openParen.value === "(")) {
-        throw 'bruh' // TODO: better error
-    }
+    
     parser.current += 2; // skip symbol name & starting parenthesis
 
     funcall.args = parseFunctionArguments(parser) as IFunctionArgumentsNode;
     
-    parser.current++; // skip closing parenthesis (FIXME: this doesnt always do it for some reason, perhaps with the revision it will)
+    parser.current++; // skip closing parenthesis
     return funcall;
 }
 
@@ -242,25 +261,36 @@ export const parseValue : Walker = (parser: Parser): INode => {
             value: new Fraction(parts[0], parts[1])
         } as IValueNode;
     }
-    throw 'Hey this shouldn\'t happen, something is wrong with the expression parser';
+    throw ParseError.unknown('something is wrong with the expression parser');
 }
 
-export const parseDotAccess : Walker = (parser: Parser): IDotAccessNode => {
-    const n = {
-        type: NodeType.DotAccess,
-        symbol: {
-            name: parser.currentToken.value
-        }
+export const parseDotAccesses : Walker = (parser: Parser): IDotAccessNode => {
+    return parseDotAccess(parser);
+}
+
+export const parseDotAccess = (parser: Parser, previousAccess?: IDotAccessNode): IDotAccessNode => {
+    let n = {
+        type: NodeType.DotAccess
     } as IDotAccessNode;
-    parser.current += 2; // skip the symbol and the dot
-    n.property = parser.currentToken.value; // the property comes after the dot
-    parser.current ++; // skip the property
-    if (parser.currentToken.type === TokenType.SPECIAL && parser.currentToken.value === '(') { // if it's a function call
-        parser.current ++; // skip starting parenthesis
-        n.args = parseFunctionArguments(parser) as IFunctionArgumentsNode;
-        parser.current++; // skip closing parenthesis
-    } else { // if not, it's a variable get/set. will add this later
-        //throw `this has not been implemented yet. sory !! :sad:`;
+    if (previousAccess) {
+        n.accessee = previousAccess;
+    } else {
+        if (parser.next().type === TokenType.SPECIAL && parser.currentToken.value === '(') { // if it's a function call
+            n.accessee = (parseFunctionCall(parser) as IFunctionCallNode);
+        } else if (parser.currentToken.type === TokenType.SYMBOL) {
+            n.accessee = (parseSymbol(parser) as ISymbolNode);
+        } else {
+            n.accessee = parseExpression(parser, ".")
+        }
+    }
+    parser.current ++; // skip the dot
+    if (parser.next().type === TokenType.SPECIAL && parser.next().value === '(') { // if it's a function call
+        n.prop = (parseFunctionCall(parser) as IFunctionCallNode);
+    } else {
+        n.prop = (parseSymbol(parser) as ISymbolNode);
+    }
+    if (parser.currentToken.type === TokenType.SPECIAL && parser.currentToken.value === '.') {
+        n = parseDotAccess(parser, n)
     }
     return n;
 }
