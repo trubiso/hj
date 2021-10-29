@@ -3,7 +3,7 @@ import { EvaluationError, TypeError } from "./errors";
 import ExpressionEvaluator from "./expressionEvaluator";
 import Fraction from "./dataclasses/fraction";
 import { BuiltIn } from "./token";
-import { INode, ITopNode, NodeType, IVardecNode, IExpressionNode, IFunctionCallNode, IValueNode, ISymbolNode, IOperatorNode, IIfStmtNode, ICodeBlockNode, IWhileStmtNode, IVarAssignNode, IDotAccessNode, IUnevaluatedArrayNode, getNodeTypeName, IFunctionArgumentsNode, IArrayAccessNode } from "./parser/nodes";
+import { INode, ITopNode, NodeType, IVardecNode, IExpressionNode, IFunctionCallNode, IValueNode, ISymbolNode, IOperatorNode, IIfStmtNode, ICodeBlockNode, IWhileStmtNode, IVarAssignNode, IDotAccessNode, IUnevaluatedArrayNode, getNodeTypeName, IFunctionArgumentsNode, IArrayAccessNode, IArrayForStmtNode } from "./parser/nodes";
 import { dotFunctions, dotProps, standardFunctions } from "./languageFunctions";
 import Array from "./dataclasses/array";
 
@@ -38,6 +38,15 @@ export default class Evaluator {
         if (typeof n === 'number') return NodeType.NumberLiteral;
         if (n instanceof Fraction) return NodeType.Fraction;
         if (n.length) return NodeType.Array;
+        throw `Unsupported type: ${typeof n}`;
+    }
+
+    static getTypeAsBuiltIn(n: any): BuiltIn {
+        if (typeof n === 'string') return 'string';
+        if (typeof n === 'boolean') return 'bool';
+        if (typeof n === 'number') return 'num';
+        if (n instanceof Fraction) return 'frac';
+        if (n.length) return 'array';
         throw `Unsupported type: ${typeof n}`;
     }
 
@@ -276,6 +285,22 @@ export default class Evaluator {
         }
     }
 
+    private evaluateArrayForStatement(n: IArrayForStmtNode) {
+        if (this.variables.some(v => v.name === n.valSymbol.name)) throw `DONT DO THAT :(((`; // TODO: better error
+        const arr: Array = this.evaluateExpression(n.arr).value; // FIXME: wont work on strings; perhaps it's a good idea
+        if (!arr.start) return;
+        this.variables.push({
+            type: Evaluator.getTypeAsBuiltIn(arr.start!.value),
+            name: n.valSymbol.name,
+            val: arr.start!.value
+        } as IVar);
+        const varIdx = this.variables.length - 1;
+        arr.forEach(v => {
+            this.variables[varIdx].val = v;
+            this.run(n.code);
+        });
+    }
+
     private run(node: INode) {
         switch(node.type) {
         case NodeType.VariableDeclaration:
@@ -295,6 +320,9 @@ export default class Evaluator {
             break;
         case NodeType.WhileStmt:
             this.evaluateWhileStatement(node as IWhileStmtNode);
+            break;
+        case NodeType.ArrayForStmt:
+            this.evaluateArrayForStatement(node as IArrayForStmtNode);
             break;
         case NodeType.CodeBlock:
             for (const subNode of (node as ICodeBlockNode).nodes) {

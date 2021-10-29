@@ -1,8 +1,16 @@
-array myArray = [0];
+num max = input("How many numbers do you want? ");
+string output = "Numbers from 1 to " + stringify(max) + ": ";
+array numbers = [];
 num i = 0;
-while (i < 100) {
-    myArray.append(myArray.length);
+while (i < max) {
+    numbers.append(numbers.length + 1);
     i = i + 1;
 }
-myArray[-1] = 2883;
-print(myArray[-1], myArray[2], myArray[::10], myArray[13:-13:13]);
+for (number in numbers) {
+    output = output + stringify(number);
+    if (number < max) {
+        output = output + ", ";
+    }
+}
+output = output + "! I really hope this works.";
+print(output);

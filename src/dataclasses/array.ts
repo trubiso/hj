@@ -141,6 +141,16 @@ export default class Array {
         else return { type: NodeType.Array, value: result };
     }
 
+    public forEach = (callback: (v: any, i: number) => any) => {
+        let i = 0;
+        let current = this.start;
+        while (current !== null) {
+            callback(current.value, i);
+            current = current.next;
+            i++;
+        }
+    }
+
     public toString = (): string => {
         let str: string = "[";
         if (this.length) {

@@ -5,6 +5,7 @@ import { Walker } from './walker';
 import { parseExpression } from './parseFunctions';
 import { INode, NodeType, ICodeBlockNode, IVardecNode, IExpressionNode, IIfStmtNode, IElseStmtNode, getNodeTypeName, IWhileStmtNode, IVarAssignNode, IFunctionCallNode, IValueNode, IOperatorNode, ISymbolNode, IFunctionArgumentsNode, IUnevaluatedArrayNode, IArrayForStmtNode, IDotAccessNode, IArrayAccessNode } from './nodes';
 import Fraction from '../dataclasses/fraction';
+import { expressionWalker } from './expressionWalker';
 
 export const parseCodeBlock : Walker = (parser: Parser): INode => {
     const n = {
@@ -66,14 +67,12 @@ export const parseControlStructure : Walker = (parser: Parser): INode => {
         parser.current ++;
 
         node.code = parser.walk() as ICodeBlockNode;
-        originalCurrent = parser.current; 
-        next = parser.walk();
-        
-        if (next.type === NodeType.ElseStmt) {
+
+        if (checkToken(parser.next(), TokenType.KEYWORD, 'else')) {
+            next = parser.walk();
             node.else = (next as IElseStmtNode);
-        } else {
-            parser.current = originalCurrent;
         }
+        
         return node;
     case 'elif':
         node = {
@@ -134,19 +133,17 @@ export const parseControlStructure : Walker = (parser: Parser): INode => {
         node.code = parser.walk() as ICodeBlockNode;
         return node;
     case 'for':
-        if (parser.next().type === TokenType.SPECIAL && parser.next().value === '(') {
+        if (!checkToken(parser.next(3), TokenType.KEYWORD, 'in')) {
             throw new UnimplementedError('ClassicForStmt');
         } else {
             node = {
                 type: NodeType.ArrayForStmt
             } as IArrayForStmtNode;
-            parser.current++; // skip the for
-            node.valSymbol = parser.walk() as ISymbolNode; // get the symbol name
-            parser.current++; // skip the in
-            node.arr = parser.walk() as ISymbolNode | IValueNode; // get the array as a literal / symbol
-            if (![NodeType.StringLiteral, NodeType.Array, NodeType.Symbol].includes(node.arr.type)) {
-                throw SyntaxError.invalidNode('for ... in', 'string literal, array or symbol', node.arr.type);
-            }
+            parser.current += 2; // skip the for (
+            node.valSymbol = expressionWalker(parser) as ISymbolNode; // get the symbol name
+            parser.current ++; // skip the in
+            node.arr = parseExpression(parser, ')'); // get the thing we iterate over
+            parser.current ++; // skip closing parenthesis
             node.code = parser.walk() as ICodeBlockNode; // get the code
             return node; // and we're done
         }

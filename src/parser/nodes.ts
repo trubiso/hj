@@ -80,7 +80,7 @@ export interface IIfStmtNode extends INode {
 }
 
 export interface IArrayForStmtNode extends INode {
-    arr: ISymbolNode | IValueNode;
+    arr: IExpressionNode;
     valSymbol: ISymbolNode;
     code: ICodeBlockNode;
 }

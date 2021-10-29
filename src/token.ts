@@ -14,7 +14,7 @@ export const TokenTypes = {
 
 export type BuiltIn  = 'frac' | 'num' | 'void' | 'string' | 'frac' | 'bool' | 'array';
 export type UsrTypes  = 'class' | 'function';
-export type Keyword  = 'if' | 'else' | 'elif' | 'while' | 'for' | 'return';
+export type Keyword  = 'if' | 'else' | 'elif' | 'while' | 'for' | 'in' | 'return';
 export type Operator = '+' | '-' | '*' | '/' | '**' | '+=' | '-=' | '*=' | '/=' | '++' | '--' | '==' | '<' | '<=' | '>' | '>=' | '!=';
 
 export function getTokenTypeName(i: number) { return Object.values(TokenType)[i]; }
