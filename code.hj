@@ -1,13 +1,8 @@
-array myArray = [999];
+array myArray = [0];
 num i = 0;
-print(3 < 2);
-while (i < 10) {
-    myArray.prepend(myArray.length);
+while (i < 100) {
     myArray.append(myArray.length);
-    print(i);
-    if (i == 5) {
-        print("halfway!");
-    }
     i = i + 1;
 }
-print(myArray);
+myArray[-1] = 2883;
+print(myArray[-1], myArray[2], myArray[::10], myArray[13:-13:13]);

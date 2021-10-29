@@ -10,5 +10,5 @@ const tokens = tokenizer.createTokens();
 const parser = new Parser(tokens);
 const ast = parser.parse();
 const evaluator : Evaluator = new Evaluator(ast);
-// evaluator.prettyPrint();
+evaluator.prettyPrint();
 evaluator.evaluate();

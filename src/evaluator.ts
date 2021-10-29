@@ -3,7 +3,7 @@ import { EvaluationError, TypeError } from "./errors";
 import ExpressionEvaluator from "./expressionEvaluator";
 import Fraction from "./dataclasses/fraction";
 import { BuiltIn } from "./token";
-import { INode, ITopNode, NodeType, IVardecNode, IExpressionNode, IFunctionCallNode, IValueNode, ISymbolNode, IOperatorNode, IIfStmtNode, ICodeBlockNode, IWhileStmtNode, IVarAssignNode, IDotAccessNode, IUnevaluatedArrayNode, getNodeTypeName, IFunctionArgumentsNode } from "./parser/nodes";
+import { INode, ITopNode, NodeType, IVardecNode, IExpressionNode, IFunctionCallNode, IValueNode, ISymbolNode, IOperatorNode, IIfStmtNode, ICodeBlockNode, IWhileStmtNode, IVarAssignNode, IDotAccessNode, IUnevaluatedArrayNode, getNodeTypeName, IFunctionArgumentsNode, IArrayAccessNode } from "./parser/nodes";
 import { dotFunctions, dotProps, standardFunctions } from "./languageFunctions";
 import Array from "./dataclasses/array";
 
@@ -42,12 +42,16 @@ export default class Evaluator {
     }
 
     public static prettifyNode(n: INode, il = 0 /* indentation level */) : string {
-        let p;
+        let p, v;
         switch (n.type) {
         case NodeType.VariableDeclaration:
             p = (n as IVardecNode);
-            const v = p.varval.type ? `[\n${'\t'.repeat(il + 1)}${this.prettifyNode(p.varval, il + 1)}\n${'\t'.repeat(il + 1)}` : p.varval;
+            v = p.varval.type ? `[\n${'\t'.repeat(il + 1)}${this.prettifyNode(p.varval, il + 1)}\n${'\t'.repeat(il + 1)}` : p.varval;
             return `${' '.repeat(il)}[Declare variable ${p.varname} with type ${p.vartype} and value ${v}]`;
+        case NodeType.VariableAssignment:
+            p = (n as IVarAssignNode);
+            v = p.varval.type ? `[\n${'\t'.repeat(il + 1)}${this.prettifyNode(p.varval, il + 1)}\n${'\t'.repeat(il + 1)}` : p.varval;
+            return `${' '.repeat(il)}[Assign variable ${p.varname}${p.idx !== undefined ? ` @ idx ${p.idx}` : ``} to value ${v}]`;
         case NodeType.Expression:
             p = (n as IExpressionNode);
             return `${' '.repeat(il)}[Expression [\n${' '.repeat(il + 1)}${p.expr.map(v => this.prettifyNode(v, il)).join(`, \n${' '.repeat(il + 1)}`)}\n${' '.repeat(il + 1)}]`;
@@ -130,6 +134,9 @@ export default class Evaluator {
                 return {type: typeof t === "string" ? NodeType.StringLiteral : (typeof t === "number" ? NodeType.NumberLiteral : (typeof t === "boolean" ? NodeType.Boolean : (t instanceof Fraction ? NodeType.Fraction : NodeType.Symbol))), value: t} as IValueNode;
             } else if (v.type === NodeType.DotAccess) {
                 return this.evaluateDotAccess(v as IDotAccessNode);
+            } else if (v.type === NodeType.ArrayAccess) {
+                const n = v as IArrayAccessNode;
+                return this.variables.find(r => r.name === n.varname)?.val.access(...[n.start, n.end, n.step].map(r => r ? this.evaluateExpression(r) : r));
             } else {
                 return v as INode;
             }
@@ -224,7 +231,11 @@ export default class Evaluator {
     private evaluateVariableAssignment(n: IVarAssignNode) {
         let correspondingVar = this.variables.find(v => v.name === n.varname);
         if (!correspondingVar) throw TypeError.symbolNotFound(n.varname, this.variables);
-        correspondingVar.val = this.evaluateExpression(n.varval).value;
+        if (n.idx !== undefined) {
+            const idx = this.evaluateExpression(n.idx).value;
+            if (correspondingVar.val instanceof Array) correspondingVar.val.set(idx, this.evaluateExpression(n.varval));
+            else correspondingVar.val[idx] = this.evaluateExpression(n.varval).value;
+        } else correspondingVar.val = this.evaluateExpression(n.varval).value;
     }
 
     private evaluateDotAccess(n: IDotAccessNode): IValueNode {

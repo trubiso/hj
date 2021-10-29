@@ -1,9 +1,9 @@
 import Parser from './parser'
-import Token, { TokenType, getTokenTypeName, BuiltIn, Keyword } from '../token'
+import Token, { TokenType, getTokenTypeName, BuiltIn, Keyword, checkToken } from '../token'
 import { ParseError, SyntaxError, UnimplementedError } from '../errors'
 import { Walker } from './walker';
 import { parseExpression } from './parseFunctions';
-import { INode, NodeType, ICodeBlockNode, IVardecNode, IExpressionNode, IIfStmtNode, IElseStmtNode, getNodeTypeName, IWhileStmtNode, IVarAssignNode, IFunctionCallNode, IValueNode, IOperatorNode, ISymbolNode, IFunctionArgumentsNode, IUnevaluatedArrayNode, IArrayForStmtNode, IDotAccessNode } from './nodes';
+import { INode, NodeType, ICodeBlockNode, IVardecNode, IExpressionNode, IIfStmtNode, IElseStmtNode, getNodeTypeName, IWhileStmtNode, IVarAssignNode, IFunctionCallNode, IValueNode, IOperatorNode, ISymbolNode, IFunctionArgumentsNode, IUnevaluatedArrayNode, IArrayForStmtNode, IDotAccessNode, IArrayAccessNode } from './nodes';
 import Fraction from '../dataclasses/fraction';
 
 export const parseCodeBlock : Walker = (parser: Parser): INode => {
@@ -156,24 +156,31 @@ export const parseControlStructure : Walker = (parser: Parser): INode => {
 }
 
 export const parseVariableAssignment : Walker = (parser: Parser): INode => {
-    const varName = parser.currentToken;
-    const asgnSymbol = parser.next();
-    parser.current += 2;
+    const varName = parser.currentToken; // we start at a symbol
+    const varAsgn = {
+        type: NodeType.VariableAssignment,
+        varname: varName.value
+    } as IVarAssignNode;
+
+    let asgnSymbol = parser.next();
+    if (checkToken(parser.next(), TokenType.SPECIAL, '[')) {
+        parser.current += 2; // skip name, [
+        varAsgn.idx = parseExpression(parser, ']');
+        parser.current ++; // skip ]
+        asgnSymbol = parser.currentToken;
+        parser.current ++; // skip operator
+    } else parser.current += 2; // skip normally if not
     const varValue = parseExpression(parser, ';');
     
-    if (!(varName.type === TokenType.SYMBOL && asgnSymbol.type === TokenType.OPERATOR && asgnSymbol.value === '=')) {
+    if (!(varName.type === TokenType.SYMBOL && checkToken(asgnSymbol, TokenType.OPERATOR, '='))) {
         if (varName.type !== TokenType.SYMBOL)
-            throw SyntaxError.invalidToken('a type (inside a variable assignment structure)', 'operator', varName.type);
+            throw SyntaxError.invalidToken('a type (inside a variable assignment structure)', 'variable name', varName.type);
         if (asgnSymbol.type !== TokenType.OPERATOR)
             throw SyntaxError.invalidToken('variable name', 'operator', asgnSymbol.type);
         throw new UnimplementedError("Operators that aren't = inside variable assignment");
     }
 
-    const varAsgn = {
-        type: NodeType.VariableAssignment,
-        varname: varName.value,
-        varval: varValue
-    } as IVarAssignNode;
+    varAsgn.varval = varValue;
     return varAsgn;
 }
 
@@ -314,4 +321,25 @@ export const parseArray : Walker = (parser: Parser): INode => {
     // skip the "]"
     parser.current++;
     return arrayElementsNode;
+}
+
+export const parseArrayAccess : Walker = (parser: Parser): INode => {
+    const n = { // this comment is useless
+        type: NodeType.ArrayAccess
+    } as IArrayAccessNode;
+    n.varname = parser.currentToken.value; // because ofc
+    parser.current += 2; // skip name and starting [
+    if (!checkToken(parser.currentToken, TokenType.SPECIAL, ':')) // because its optional
+        n.start = parseExpression(parser, ':', ']'); // take start
+    //else parser.current++; // just skip it if not lol
+    parser.current ++; // skip either : or ]
+    if (checkToken(parser.next(-1), TokenType.SPECIAL, ']')) return n; // if we skipped ], we can return
+    if (!checkToken(parser.currentToken, TokenType.SPECIAL, ':')) // because its optional
+        n.end = parseExpression(parser, ':', ']'); // if we didn't return, we skipped over a :, so lets get the end
+    //else parser.current++; // read the last comment about this
+    parser.current ++; // skip either : or ]
+    if (checkToken(parser.next(-1), TokenType.SPECIAL, ']')) return n; // if we skipped ], we can return
+    n.step = parseExpression(parser, ']'); // if we got here the last thing we can have is step and its mandatory
+    parser.current ++; // skip ]
+    return n; // at the end we always return :D
 }
