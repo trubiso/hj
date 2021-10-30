@@ -42,7 +42,7 @@ export interface IVarAssignNode extends INode {
 }
 
 export interface IArrayAccessNode extends INode {
-    varname: string;
+    accessee: IExpressionNode | ISymbolNode | IFunctionCallNode; // TODO: support accessing IArrayAccessNode
     start?: IExpressionNode;
     end?: IExpressionNode;
     step?: IExpressionNode;

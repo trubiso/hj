@@ -115,7 +115,7 @@ export default class Array {
         }
     }
 
-    public access = (start: IValueNode, end?: IValueNode, step?: IValueNode, hasFirstSep?: boolean) => {
+    public access = (start: IValueNode, end?: IValueNode, step?: IValueNode, hasFirstSep?: boolean) : IValueNode => {
         const startIdx = start ? this.parseIdx(start.value) : 0;
         const endIdx = end ? this.parseIdx(this.parseIdx(end.value) - 1) : (step || hasFirstSep ? this.length - 1 : startIdx);
         const stepVal = step ? this.parseIdx(step.value) : 1;
@@ -137,13 +137,21 @@ export default class Array {
             }
         }
 
-        if (!result[1]) return { type: this.type, value: result[0] };
+        if (!result[1]) return { type: this.type!, value: result[0] };
         else return { type: NodeType.Array, value: new Array(...result.map(v => {
             return {
                 type: this.type,
                 value: v
             } as IValueNode;
         })) };
+    }
+
+    public pick = () => {
+        const idx = Math.floor(Math.random() * this.length);
+        return this.access({
+            type: NodeType.NumberLiteral,
+            value: idx
+        }).value;
     }
 
     public forEach = (callback: (v: any, i: number) => any) => {

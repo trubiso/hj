@@ -105,7 +105,7 @@ export default class Evaluator {
             return `${' '.repeat(il)}[Dot access with accessee ${this.prettifyNode(p.accessee, 0)} accessing prop/func ${this.prettifyNode(p.prop, 0)}]`;
         case NodeType.ArrayAccess:
             p = n as IArrayAccessNode;
-            return `${' '.repeat(il)}[Array access: ${p.varname}@${[p.start, p.step, p.end].map(v => v === undefined ? v : this.prettifyNode(v)).filter(v => v !== undefined).join(':')}]`;
+            return `${' '.repeat(il)}[Array access: ${this.prettifyNode(p.accessee, 0)}@${[p.start, p.step, p.end].map(v => v === undefined ? v : this.prettifyNode(v)).filter(v => v !== undefined).join(':')}]`;
         default:
             return `${' '.repeat(il)}[${getNodeTypeName(n.type)}]`;
         }
@@ -148,7 +148,17 @@ export default class Evaluator {
                 return this.evaluateDotAccess(v as IDotAccessNode);
             } else if (v.type === NodeType.ArrayAccess) {
                 const n = v as IArrayAccessNode;
-                return this.variables.find(r => r.name === n.varname)?.val.access(...[n.start, n.end, n.step].map(r => r ? this.evaluateExpression(r) : r), n.hasFirstSep);
+                let k; // k will hold the variable
+                if (n.accessee.type === NodeType.FunctionCall) {
+                    k = this.evaluateFunctionCall(n.accessee as IFunctionCallNode);
+                } else if (n.accessee.type === NodeType.Expression) {
+                    k = this.evaluateExpression(n.accessee as IExpressionNode).value;
+                } else if (n.accessee.type === NodeType.Symbol) {
+                    k = this.variables.find(r => r.name === (n.accessee as ISymbolNode).name)?.val
+                } else {
+                    throw `up`; // get the pun?
+                }
+                return k.access(...[n.start, n.end, n.step].map(r => r ? this.evaluateExpression(r) : r), n.hasFirstSep);
             } else {
                 return v as INode;
             }

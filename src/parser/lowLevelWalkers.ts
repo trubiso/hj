@@ -181,12 +181,14 @@ export const parseVariableAssignment : Walker = (parser: Parser): INode => {
     return varAsgn;
 }
 
-export const parseFunctionCall : Walker = (parser: Parser): INode => {
+export const parseFunctionCall = (parser: Parser, calledFromArr = false): INode => {
     let funcall = {
         type: NodeType.FunctionCall,
         name: parser.currentToken.value,
     } as IFunctionCallNode;
     
+    const ogCurrent = parser.current;
+
     // check if the next token is "(" (it has to be)
     let openParen = parser.next();
     
@@ -195,6 +197,10 @@ export const parseFunctionCall : Walker = (parser: Parser): INode => {
     funcall.args = parseFunctionArguments(parser) as IFunctionArgumentsNode;
     
     parser.current++; // skip closing parenthesis
+    if (parser.currentToken && checkToken(parser.currentToken, TokenType.SPECIAL, '[') && !calledFromArr) {
+        parser.current = ogCurrent;
+        return parseArrayAccess(parser);
+    }
     return funcall;
 }
 
@@ -324,8 +330,12 @@ export const parseArrayAccess : Walker = (parser: Parser): INode => {
     const n = { // this comment is useless
         type: NodeType.ArrayAccess
     } as IArrayAccessNode;
-    n.varname = parser.currentToken.value; // because ofc
-    parser.current += 2; // skip name and starting [
+    if (parser.next().type === TokenType.SPECIAL && parser.next().value === '(') { // we're accessing a function call
+        n.accessee = parseFunctionCall(parser, true) as IFunctionCallNode;
+    } else { // we're accessing a symbol
+        n.accessee = parseSymbol(parser) as ISymbolNode;
+    }
+    parser.current ++; // skip starting [
     if (!checkToken(parser.currentToken, TokenType.SPECIAL, ':')) // because its optional
         n.start = parseExpression(parser, ':', ']'); // take start
     if (!n.start?.expr.length) n.start = undefined;

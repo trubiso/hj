@@ -1,12 +1,3 @@
-num max = input("How many numbers do you want? ");
-string output = "Numbers from 1 to " + stringify(max) + ": ";
-array r = range(max + 1);
-array neg = r[1:];
-for (number in neg) {
-    output = output + stringify(number);
-    if (number < max) {
-        output = output + ", ";
-    }
-}
-output = output + "! I really hope this works.";
-print(output);
+num max = 10;
+array a = range(max + 1)[1:];
+print(range(a.pick() * 100 - a.pick() * 50)[a.pick():0-a.pick():a.pick()]);
