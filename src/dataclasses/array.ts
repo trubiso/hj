@@ -164,19 +164,23 @@ export default class Array {
         }
     }
 
-    public toString = (): string => {
-        let str: string = "[";
+    public join = (separator: IValueNode): string => {
+        let str = "";
         if (this.length) {
             let current = this.start;
             while (current !== null) {
                 str += current.value.toString();
                 if (current.next) {
-                    str += ", ";
+                    str += separator.value;
                 }
                 current = current.next;
             }
         }
-        return str + "]";
+        return str;
+    }
+
+    public toString = (): string => {
+        return `[${this.join({ type: NodeType.StringLiteral, value: ", " } as IValueNode)}]`;
     }
 }
 

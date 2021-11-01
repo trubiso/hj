@@ -4,24 +4,22 @@ export const TokenTypes = {
     STRING  : /^[\s]*\"(?:.*?)\"/,
     BOOLEAN : /^[\s]*(?:true|false)/,
     BUILTIN : /^[\s]*(?:frac|num|void|string|frac|bool|array)\s/,
-    USRTYPES: /^[\s]*(?:class|function)\s/,
-    KEYWORD : /^[\s]*(if|else|elif|while|for|in|return)\s/,
+    KEYWORD : /^[\s]*(if|else|elif|while|for|in|function|return|class)\s/,
     SYMBOL  : /^[\s]*[A-Za-z_][\w]*/,
-    OPERATOR: /^[\s]*(?:(?:==|<=|<|>=|>|!=)|(?:[+\-\/*]?=)|(?:[+\-\*]{2})|(?:[+\-\/*\=]))/,
     SPECIAL : /^[\s]*(?:[\{\}\(\)\[\];:]|=>|\.\.\.|\.)/,
+    OPERATOR: /^[\s]*(?:(?:==|<=|<|>=|>|!=)|(?:(?:\*{2}|\+|\-|\/|\*)?=)|(?:\+\+|\-\-)|(?:\*\*|[+\-\/*\=]))/,
     OTHER   : /^[\s]*(?:\,)/
 };
 
 export type BuiltIn  = 'frac' | 'num' | 'void' | 'string' | 'frac' | 'bool' | 'array';
-export type UsrTypes  = 'class' | 'function';
-export type Keyword  = 'if' | 'else' | 'elif' | 'while' | 'for' | 'in' | 'return';
-export type Operator = '+' | '-' | '*' | '/' | '**' | '+=' | '-=' | '*=' | '/=' | '++' | '--' | '==' | '<' | '<=' | '>' | '>=' | '!=';
+export type Keyword  = 'if' | 'else' | 'elif' | 'while' | 'for' | 'in' | 'function' | 'return' | 'class';
+export type Operator = '+' | '-' | '*' | '/' | '**' | '+=' | '-=' | '*=' | '/=' | '**=' | '++' | '--' | '==' | '<' | '<=' | '>' | '>=' | '!=';
 
 export function getTokenTypeName(i: number) { return Object.values(TokenType)[i]; }
 export function checkToken(token: Token, type: TokenType, value?: string) { return token.type === type && (value ? token.value === value : true); }
 
 export enum TokenType {
-    FRACTION, NUMBER, STRING, BOOLEAN, BUILTIN, USRTYPES, KEYWORD, SYMBOL, OPERATOR, SPECIAL, OTHER
+    FRACTION, NUMBER, STRING, BOOLEAN, BUILTIN, KEYWORD, SYMBOL, SPECIAL, OPERATOR, OTHER
 }
 
 export default class Token {

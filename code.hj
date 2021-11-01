@@ -1,3 +1,23 @@
-num max = 10;
-array a = range(max + 1)[1:];
-print(range(a.pick() * 100 - a.pick() * 50)[a.pick():0-a.pick():a.pick()]);
+function giveThinkArray(num thinkLimit, num leastThink) => array {
+    array thinkArray = [];
+    if (leastThink >= 0) {
+        for (number in range(thinkLimit + 1)[leastThink:]) {
+            thinkArray.append(":think" + stringify(number) + ":");
+        }
+    } else {
+        print("that's not nice of you!");
+    }
+    return thinkArray;
+}
+
+function giveThinkElements() => array {
+    num thinkLimit = input("what's the think limit? ");
+    num leastThink = input("what's the least think? ");
+    return [thinkLimit, leastThink];
+}
+
+array thinkElements = giveThinkElements();
+array thinks = giveThinkArray(thinkElements[0], thinkElements[1]);
+if (thinks.length > 0) {
+    print(thinks.join(" "));
+}

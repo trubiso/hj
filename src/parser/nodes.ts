@@ -5,7 +5,7 @@ export function getNodeTypeName(n: NodeType) {
 }
 
 export enum NodeType {
-    Program, NumberLiteral, Array, UnevaluatedArray, ArrayAccess, StringLiteral, Boolean, Fraction, Symbol, VariableDeclaration, VariableAssignment, Expression, FunctionCall, DotAccess, FunctionArguments, Operator, CodeBlock, IfStmt, ElseStmt, WhileStmt, ArrayForStmt, ClassicForStmt, Comma, NullNode
+    Program, NumberLiteral, Array, UnevaluatedArray, ArrayAccess, StringLiteral, Boolean, Fraction, Symbol, Fundec, FundecArg, Return, VariableDeclaration, VariableAssignment, Expression, FunctionCall, DotAccess, FunctionArguments, Operator, CodeBlock, IfStmt, ElseStmt, WhileStmt, ArrayForStmt, ClassicForStmt, Comma, NullNode
 }
 
 export interface INode {
@@ -68,6 +68,22 @@ export interface IFunctionCallNode extends INode {
 
 export interface IFunctionArgumentsNode extends INode {
     args: IExpressionNode[]
+}
+
+export interface IFundecNode extends INode {
+    name: string;
+    returnType: BuiltIn;
+    args: IFundecArgNode[];
+    code: ICodeBlockNode;
+}
+
+export interface IFundecArgNode extends INode {
+    argType: BuiltIn;
+    argName: string;
+}
+
+export interface IReturnNode extends INode {
+    returnValue: IExpressionNode;
 }
 
 export interface ICodeBlockNode extends INode {

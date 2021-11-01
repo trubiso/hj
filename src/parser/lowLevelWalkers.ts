@@ -1,9 +1,9 @@
 import Parser from './parser'
-import Token, { TokenType, getTokenTypeName, BuiltIn, Keyword, checkToken } from '../token'
+import Token, { TokenType, getTokenTypeName, BuiltIn, Keyword, checkToken, Operator } from '../token'
 import { ParseError, SyntaxError, UnimplementedError } from '../errors'
 import { Walker } from './walker';
 import { parseExpression } from './parseFunctions';
-import { INode, NodeType, ICodeBlockNode, IVardecNode, IExpressionNode, IIfStmtNode, IElseStmtNode, getNodeTypeName, IWhileStmtNode, IVarAssignNode, IFunctionCallNode, IValueNode, IOperatorNode, ISymbolNode, IFunctionArgumentsNode, IUnevaluatedArrayNode, IArrayForStmtNode, IDotAccessNode, IArrayAccessNode } from './nodes';
+import { INode, NodeType, ICodeBlockNode, IVardecNode, IExpressionNode, IIfStmtNode, IElseStmtNode, getNodeTypeName, IWhileStmtNode, IVarAssignNode, IFunctionCallNode, IValueNode, IOperatorNode, ISymbolNode, IFunctionArgumentsNode, IUnevaluatedArrayNode, IArrayForStmtNode, IDotAccessNode, IArrayAccessNode, IFundecNode, IFundecArgNode, IReturnNode } from './nodes';
 import Fraction from '../dataclasses/fraction';
 import { expressionWalker } from './expressionWalker';
 
@@ -68,7 +68,7 @@ export const parseControlStructure : Walker = (parser: Parser): INode => {
 
         node.code = parser.walk() as ICodeBlockNode;
 
-        if (checkToken(parser.next(), TokenType.KEYWORD, 'else')) {
+        if (parser.currentToken && checkToken(parser.currentToken, TokenType.KEYWORD, 'else')) {
             next = parser.walk();
             node.else = (next as IElseStmtNode);
         }
@@ -147,9 +147,47 @@ export const parseControlStructure : Walker = (parser: Parser): INode => {
             node.code = parser.walk() as ICodeBlockNode; // get the code
             return node; // and we're done
         }
+    case 'function': 
+        node = {
+            type: NodeType.Fundec
+        } as IFundecNode;
+        parser.current ++; // skip function keyword
+        node.name = parser.currentToken.value;
+        parser.current ++; // skip name keyword
+        node.args = parseFundecArguments(parser);
+        parser.current ++; // skip => keyword
+        node.returnType = parser.currentToken.value as BuiltIn;
+        parser.current ++; // skip return type
+        node.code = parser.walk() as ICodeBlockNode;
+        return node;
+    case 'return':
+        node = {
+            type: NodeType.Return
+        } as IReturnNode;
+        parser.current ++; // skip return keyword;
+        node.returnValue = parseExpression(parser, ';');
+        return node;
     default:
         throw SyntaxError.unsupportedToken(parser.currentToken);
     }
+}
+
+export const parseFundecArguments = (parser: Parser): IFundecArgNode[] => {
+    const nodes = [];
+    parser.current ++; // skip starting parenthesis
+    while (!checkToken(parser.currentToken, TokenType.SPECIAL, ')')) {
+        const n = {
+            type: NodeType.FundecArg,
+        } as IFundecArgNode;
+        n.argType = parser.currentToken.value as BuiltIn;
+        parser.current ++; // skip arg type
+        n.argName = parser.currentToken.value as BuiltIn;
+        nodes.push(n);
+        parser.current ++; // skip arg name
+        if (checkToken(parser.currentToken, TokenType.OTHER, ',')) parser.current ++; // skip comma
+    }
+    parser.current ++; // skip closing parenthesis
+    return nodes;
 }
 
 export const parseVariableAssignment : Walker = (parser: Parser): INode => {
@@ -174,10 +212,44 @@ export const parseVariableAssignment : Walker = (parser: Parser): INode => {
             throw SyntaxError.invalidToken('a type (inside a variable assignment structure)', 'variable name', varName.type);
         if (asgnSymbol.type !== TokenType.OPERATOR)
             throw SyntaxError.invalidToken('variable name', 'operator', asgnSymbol.type);
-        throw new UnimplementedError("Operators that aren't = inside variable assignment");
+        if (!['++', '--'].includes(asgnSymbol.value)) {
+            varAsgn.varval = {
+                type: NodeType.Expression,
+                expr: [
+                    {
+                        type: NodeType.Symbol,
+                        name: varAsgn.varname
+                    } as ISymbolNode,
+                    {
+                        type: NodeType.Operator,
+                        operator: asgnSymbol.value.slice(0, -1) as Operator
+                    } as IOperatorNode,
+                    varValue
+                ]
+            } as IExpressionNode;
+        } else {
+            varAsgn.varval = {
+                type: NodeType.Expression,
+                expr: [
+                    {
+                        type: NodeType.Symbol,
+                        name: varAsgn.varname
+                    } as ISymbolNode,
+                    {
+                        type: NodeType.Operator,
+                        operator: asgnSymbol.value.slice(0, -1) as Operator
+                    } as IOperatorNode,
+                    {
+                        type: NodeType.NumberLiteral,
+                        value: 1
+                    } as IValueNode
+                ]
+            } as IExpressionNode;
+        }
+    } else {
+        varAsgn.varval = varValue;
     }
 
-    varAsgn.varval = varValue;
     return varAsgn;
 }
 

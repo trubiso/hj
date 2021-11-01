@@ -3,7 +3,7 @@ import { EvaluationError, TypeError } from "./errors";
 import ExpressionEvaluator from "./expressionEvaluator";
 import Fraction from "./dataclasses/fraction";
 import { BuiltIn } from "./token";
-import { INode, ITopNode, NodeType, IVardecNode, IExpressionNode, IFunctionCallNode, IValueNode, ISymbolNode, IOperatorNode, IIfStmtNode, ICodeBlockNode, IWhileStmtNode, IVarAssignNode, IDotAccessNode, IUnevaluatedArrayNode, getNodeTypeName, IFunctionArgumentsNode, IArrayAccessNode, IArrayForStmtNode } from "./parser/nodes";
+import { INode, ITopNode, NodeType, IVardecNode, IExpressionNode, IFunctionCallNode, IValueNode, ISymbolNode, IOperatorNode, IIfStmtNode, ICodeBlockNode, IWhileStmtNode, IVarAssignNode, IDotAccessNode, IUnevaluatedArrayNode, getNodeTypeName, IFunctionArgumentsNode, IArrayAccessNode, IArrayForStmtNode, IFundecNode, IReturnNode } from "./parser/nodes";
 import { dotFunctions, dotProps, standardFunctions } from "./languageFunctions";
 import Array from "./dataclasses/array";
 
@@ -11,6 +11,18 @@ export interface IVar {
     name: string,
     val: any,
     type: BuiltIn
+}
+
+export interface IFunctionArg {
+    type: BuiltIn,
+    name: string
+}
+
+export interface IFunction {
+    name: string,
+    returnType: BuiltIn,
+    args: IFunctionArg[],
+    code: ICodeBlockNode
 }
 
 export interface IDummy<T> { // this interface sucks
@@ -22,10 +34,12 @@ export type ExprType = (INode | IVar | ExprType)[]
 export default class Evaluator {
     private ast: ITopNode;
     public variables: IVar[];
+    public functions: IFunction[];
 
     constructor(ast: ITopNode) {
         this.ast = ast;
         this.variables = [];
+        this.functions = [];
     }
 
     public prettyPrint() {
@@ -37,7 +51,7 @@ export default class Evaluator {
         if (typeof n === 'boolean') return NodeType.Boolean;
         if (typeof n === 'number') return NodeType.NumberLiteral;
         if (n instanceof Fraction) return NodeType.Fraction;
-        if (n.length) return NodeType.Array;
+        if (n.length !== undefined) return NodeType.Array;
         throw `Unsupported type: ${typeof n}`;
     }
 
@@ -46,7 +60,7 @@ export default class Evaluator {
         if (typeof n === 'boolean') return 'bool';
         if (typeof n === 'number') return 'num';
         if (n instanceof Fraction) return 'frac';
-        if (n.length) return 'array';
+        if (n.length !== undefined) return 'array';
         throw `Unsupported type: ${typeof n}`;
     }
 
@@ -106,6 +120,9 @@ export default class Evaluator {
         case NodeType.ArrayAccess:
             p = n as IArrayAccessNode;
             return `${' '.repeat(il)}[Array access: ${this.prettifyNode(p.accessee, 0)}@${[p.start, p.step, p.end].map(v => v === undefined ? v : this.prettifyNode(v)).filter(v => v !== undefined).join(':')}]`;
+        case NodeType.Fundec:
+            p = n as IFundecNode;
+            return `FUNDEC ${this.prettifyNode(p.code)}` // todo: make it better
         default:
             return `${' '.repeat(il)}[${getNodeTypeName(n.type)}]`;
         }
@@ -143,7 +160,7 @@ export default class Evaluator {
                 } as IExpressionNode;
             } else if (v.type === NodeType.FunctionCall) {
                 const t = this.evaluateFunctionCall(v as IFunctionCallNode);
-                return {type: typeof t === "string" ? NodeType.StringLiteral : (typeof t === "number" ? NodeType.NumberLiteral : (typeof t === "boolean" ? NodeType.Boolean : (t instanceof Fraction ? NodeType.Fraction : NodeType.Symbol))), value: t} as IValueNode;
+                return {type: Evaluator.getType(t), value: t} as IValueNode;
             } else if (v.type === NodeType.DotAccess) {
                 return this.evaluateDotAccess(v as IDotAccessNode);
             } else if (v.type === NodeType.ArrayAccess) {
@@ -206,11 +223,12 @@ export default class Evaluator {
             } as IVar);
         } else {
             if (n.varval.type === NodeType.Expression) {
-                this.variables.push({
+                const v = {
                     name: n.varname,
                     type: n.vartype,
                     val : this.evaluateExpression(n.varval).value
-                } as IVar);
+                } as IVar;
+                this.variables.push(v);
             } else {
                 throw `what did you do`; // I feel that #2
             }
@@ -275,10 +293,23 @@ export default class Evaluator {
     }
 
     private evaluateFunctionCall(n: IFunctionCallNode) {
+        const args = n.args.args.map(arg => this.evaluateExpression(arg));
         if (standardFunctions[n.name]) {
-            return standardFunctions[n.name](...n.args.args.map(arg => this.evaluateExpression(arg)));
+            return standardFunctions[n.name](...args);
         } else {
-            throw TypeError.functionNotFound(n);
+            const f = this.functions.find(v => v.name === n.name);
+            if (!f) throw TypeError.functionNotFound(n);
+            const oldVars = [...this.variables];
+            args.forEach((v, i) => {
+                this.variables.push({
+                    type: f.args[i].type,
+                    name: f.args[i].name,
+                    val: v.value
+                } as IVar);
+            });
+            const ret = this.evaluateCodeBlock(f.code);
+            this.variables = oldVars;
+            return ret.value; // TODO: an actually good solution for scoped variables
         }
     }
 
@@ -312,7 +343,32 @@ export default class Evaluator {
             this.variables[varIdx].val = v;
             this.run(n.code);
         });
-        this.variables.filter(v => v.name !== n.valSymbol.name);
+        this.variables = this.variables.filter(v => v.name !== n.valSymbol.name);
+    }
+
+    private evaluateFunctionDeclaration(n: IFundecNode) {
+        const v = {
+            name: n.name,
+            args: n.args.map(v => {
+                return {
+                    name: v.argName,
+                    type: v.argType
+                } as IFunctionArg;
+            }),
+            returnType: n.returnType,
+            code: n.code
+        } as IFunction;
+        this.functions.push(v);
+    }
+
+    private evaluateCodeBlock(n: ICodeBlockNode) {
+        for (const subNode of n.nodes) {
+            if (subNode.type === NodeType.Return) {
+                return this.evaluateExpression((subNode as IReturnNode).returnValue);
+            }
+            this.run(subNode);
+        }
+        return null;
     }
 
     private run(node: INode) {
@@ -338,10 +394,11 @@ export default class Evaluator {
         case NodeType.ArrayForStmt:
             this.evaluateArrayForStatement(node as IArrayForStmtNode);
             break;
+        case NodeType.Fundec:
+            this.evaluateFunctionDeclaration(node as IFundecNode);
+            break;
         case NodeType.CodeBlock:
-            for (const subNode of (node as ICodeBlockNode).nodes) {
-                this.run(subNode);
-            }
+            this.evaluateCodeBlock(node as ICodeBlockNode);
             break;
         default:
             throw EvaluationError.invalidProgramStructure(node);
