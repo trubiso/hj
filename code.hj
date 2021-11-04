@@ -21,3 +21,5 @@ array thinks = giveThinkArray(thinkElements[0], thinkElements[1]);
 if (thinks.length > 0) {
     print(thinks.join(" "));
 }
+
+printSymbols();

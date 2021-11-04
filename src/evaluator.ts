@@ -295,37 +295,39 @@ export default class Evaluator {
     private evaluateFunctionCall(n: IFunctionCallNode) {
         const args = n.args.args.map(arg => this.evaluateExpression(arg));
         if (standardFunctions[n.name]) {
+            // github copilot's opinion:
+            // const wonderfulStory = "Once upon a time, there was a function called " + n.name + " and it was awesome";
+            // console.log(wonderfulStory);
             return standardFunctions[n.name](...args);
         } else {
             const f = this.functions.find(v => v.name === n.name);
             if (!f) throw TypeError.functionNotFound(n);
-            const oldVars = [...this.variables];
-            args.forEach((v, i) => {
-                this.variables.push({
-                    type: f.args[i].type,
+            const argVars = args.map((v, i) => {
+                return {
                     name: f.args[i].name,
+                    type: f.args[i].type,
                     val: v.value
-                } as IVar);
-            });
-            const ret = this.evaluateCodeBlock(f.code);
-            this.variables = oldVars;
-            return ret.value; // TODO: an actually good solution for scoped variables
+                } as IVar;
+            })
+            const ret = this.evaluateCodeBlock(f.code, ...argVars);
+            return ret.value;
         }
     }
 
     private evaluateIfStatement(n: IIfStmtNode) {
         if (this.evaluateExpression(n.condition).value == true) {
-            this.run(n.code);
+            this.evaluateCodeBlock(n.code);
         } else {
             if (n.else) {
-                this.run(n.else.code);
+                if (n.else.code.type === NodeType.IfStmt) this.evaluateIfStatement(n.else.code as IIfStmtNode);
+                else this.run(n.else.code);
             }
         }
     }
 
     private evaluateWhileStatement(n: IWhileStmtNode) {
         while (this.evaluateExpression(n.condition).value == true) {
-            this.run(n.code);
+            this.evaluateCodeBlock(n.code);
         }
     }
 
@@ -333,17 +335,15 @@ export default class Evaluator {
         if (this.variables.some(v => v.name === n.valSymbol.name)) throw `DONT DO THAT :(((`; // TODO: better error
         const arr: Array = this.evaluateExpression(n.arr).value; // FIXME: wont work on strings; perhaps it's a good idea
         if (!arr.start) return;
-        this.variables.push({
+        let idxVar = {
             type: Evaluator.getTypeAsBuiltIn(arr.start!.value),
             name: n.valSymbol.name,
             val: arr.start!.value
-        } as IVar);
-        const varIdx = this.variables.length - 1;
+        } as IVar;
         arr.forEach(v => {
-            this.variables[varIdx].val = v;
-            this.run(n.code);
+            idxVar.val = v;
+            this.evaluateCodeBlock(n.code, idxVar);
         });
-        this.variables = this.variables.filter(v => v.name !== n.valSymbol.name);
     }
 
     private evaluateFunctionDeclaration(n: IFundecNode) {
@@ -361,12 +361,15 @@ export default class Evaluator {
         this.functions.push(v);
     }
 
-    private evaluateCodeBlock(n: ICodeBlockNode) {
+    private evaluateCodeBlock(n: ICodeBlockNode, ...extraVars: IVar[]) {
+        const e = new Evaluator(this.ast);
+        e.variables = [...this.variables, ...extraVars].map(x => ({...x}));
+        e.functions = this.functions.map(x => ({...x}));
         for (const subNode of n.nodes) {
             if (subNode.type === NodeType.Return) {
-                return this.evaluateExpression((subNode as IReturnNode).returnValue);
+                return e.evaluateExpression((subNode as IReturnNode).returnValue);
             }
-            this.run(subNode);
+            e.run(subNode);
         }
         return null;
     }
